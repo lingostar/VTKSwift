@@ -31,8 +31,11 @@ struct DICOMView: View {
                             .font(.caption)
                     }
 
-                    Slider(value: $sliceIndex, in: sliceMin...sliceMax, step: 1) { _ in
-                        bridge.setSlice(Int(sliceIndex))
+                    Slider(value: $sliceIndex,
+                           in: sliceMin...max(sliceMin, sliceMax),
+                           step: 1)
+                    .onChange(of: sliceIndex) { newValue in
+                        bridge.setSlice(Int(newValue))
                     }
                 }
                 .padding(.horizontal)
