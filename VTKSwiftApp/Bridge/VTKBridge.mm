@@ -11,7 +11,6 @@
 #include "vtkAutoInit.h"
 
 // Initialize VTK rendering module factories — CRITICAL for OpenGL2 rendering.
-// Without these, vtkPolyDataMapper::New() creates a base class that cannot render.
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
 VTK_MODULE_INIT(vtkInteractionStyle);
 
@@ -26,12 +25,20 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 #include "vtkInteractorStyleTrackballCamera.h"
 #include "vtkCamera.h"
 
+// DICOM support
+#include "vtkDICOMImageReader.h"
+#include "vtkImageViewer2.h"
+#include "vtkImageData.h"
+#include "vtkInteractorStyleImage.h"
+
 #if TARGET_OS_IPHONE
 #include "vtkIOSRenderWindow.h"
 #include "vtkIOSRenderWindowInteractor.h"
+#include <OpenGLES/ES3/gl.h>
 #else
 #include "vtkCocoaRenderWindow.h"
 #include "vtkCocoaRenderWindowInteractor.h"
+#include <OpenGL/gl3.h>
 #endif
 
 // --------------------------------------------------------------------------
@@ -41,6 +48,11 @@ struct VTKBridgeData {
     vtkSmartPointer<vtkRenderer>                     renderer;
     vtkSmartPointer<vtkRenderWindow>                 renderWindow;
     vtkSmartPointer<vtkRenderWindowInteractor>       interactor;
+
+    // DICOM-specific
+    vtkSmartPointer<vtkImageViewer2>                 imageViewer;
+    vtkSmartPointer<vtkDICOMImageReader>             dicomReader;
+    bool                                             isDICOMMode = false;
 };
 
 // --------------------------------------------------------------------------
@@ -102,7 +114,6 @@ struct VTKBridgeData {
     vtkSmartPointer<vtkIOSRenderWindow> renWin =
         vtkSmartPointer<vtkIOSRenderWindow>::New();
     renWin->SetSize(w, h);
-    // Use SetParentId — VTK creates its own GL view as a subview of _renderView
     renWin->SetParentId((__bridge void *)_renderView);
     _data->renderWindow = renWin;
 
@@ -119,9 +130,6 @@ struct VTKBridgeData {
         vtkSmartPointer<vtkCocoaRenderWindow>::New();
     renWin->SetSize(w, h);
     renWin->SetMultiSamples(0);
-    // Use SetParentId — VTK creates its vtkCocoaView (OpenGL) as a subview
-    // of _renderView.  Do NOT use SetWindowId (expects vtkCocoaView, not NSView)
-    // or SetRootWindow (window is nil at this point).
     renWin->SetParentId((__bridge void *)_renderView);
     _data->renderWindow = renWin;
 
@@ -141,7 +149,7 @@ struct VTKBridgeData {
 }
 
 // --------------------------------------------------------------------------
-#pragma mark - Sphere Setup
+#pragma mark - Sphere Setup (Primitives)
 // --------------------------------------------------------------------------
 - (void)setupSphere {
     // Create sphere geometry
@@ -180,11 +188,139 @@ struct VTKBridgeData {
 }
 
 // --------------------------------------------------------------------------
+#pragma mark - DICOM Loading
+// --------------------------------------------------------------------------
+- (BOOL)loadDICOMDirectory:(NSString *)path {
+    if (!path || path.length == 0) return NO;
+
+    const char *dirPath = [path UTF8String];
+
+    // Create DICOM reader
+    _data->dicomReader = vtkSmartPointer<vtkDICOMImageReader>::New();
+    _data->dicomReader->SetDirectoryName(dirPath);
+    _data->dicomReader->Update();
+
+    // Check if data was loaded
+    vtkImageData *imageData = _data->dicomReader->GetOutput();
+    if (!imageData || imageData->GetNumberOfPoints() == 0) {
+        NSLog(@"[VTKBridge] Failed to load DICOM from: %@", path);
+        _data->dicomReader = nullptr;
+        return NO;
+    }
+
+    int *dims = imageData->GetDimensions();
+    NSLog(@"[VTKBridge] DICOM loaded: %d x %d x %d slices", dims[0], dims[1], dims[2]);
+
+    // Create image viewer
+    _data->imageViewer = vtkSmartPointer<vtkImageViewer2>::New();
+    _data->imageViewer->SetInputConnection(_data->dicomReader->GetOutputPort());
+    _data->imageViewer->SetRenderWindow(_data->renderWindow);
+    _data->imageViewer->SetRenderer(_data->renderer);
+    _data->imageViewer->SetSliceOrientationToXY();
+
+    // Set initial slice to middle
+    int sliceMin = _data->imageViewer->GetSliceMin();
+    int sliceMax = _data->imageViewer->GetSliceMax();
+    _data->imageViewer->SetSlice((sliceMin + sliceMax) / 2);
+
+    // Set default Window/Level for CT (bone window)
+    _data->imageViewer->SetColorWindow(400);
+    _data->imageViewer->SetColorLevel(40);
+
+    // Switch interactor style to image mode
+    vtkSmartPointer<vtkInteractorStyleImage> imageStyle =
+        vtkSmartPointer<vtkInteractorStyleImage>::New();
+    _data->interactor->SetInteractorStyle(imageStyle);
+
+    // Set DICOM background to black
+    _data->renderer->SetBackground(0.0, 0.0, 0.0);
+    _data->renderer->SetGradientBackground(false);
+
+    _data->isDICOMMode = true;
+
+    NSLog(@"[VTKBridge] DICOM viewer ready: slices %d-%d, W/L: %.0f/%.0f",
+          sliceMin, sliceMax,
+          _data->imageViewer->GetColorWindow(),
+          _data->imageViewer->GetColorLevel());
+
+    return YES;
+}
+
+- (NSInteger)sliceCount {
+    if (!_data->imageViewer) return 0;
+    return _data->imageViewer->GetSliceMax() - _data->imageViewer->GetSliceMin() + 1;
+}
+
+- (NSInteger)currentSlice {
+    if (!_data->imageViewer) return 0;
+    return _data->imageViewer->GetSlice();
+}
+
+- (NSInteger)sliceMin {
+    if (!_data->imageViewer) return 0;
+    return _data->imageViewer->GetSliceMin();
+}
+
+- (NSInteger)sliceMax {
+    if (!_data->imageViewer) return 0;
+    return _data->imageViewer->GetSliceMax();
+}
+
+- (void)setSlice:(NSInteger)sliceIndex {
+    if (!_data->imageViewer) return;
+    int clamped = (int)sliceIndex;
+    if (clamped < _data->imageViewer->GetSliceMin())
+        clamped = _data->imageViewer->GetSliceMin();
+    if (clamped > _data->imageViewer->GetSliceMax())
+        clamped = _data->imageViewer->GetSliceMax();
+    _data->imageViewer->SetSlice(clamped);
+    [self render];
+}
+
+- (void)setWindow:(double)window level:(double)level {
+    if (!_data->imageViewer) return;
+    _data->imageViewer->SetColorWindow(window);
+    _data->imageViewer->SetColorLevel(level);
+    [self render];
+}
+
+- (double)currentWindow {
+    if (!_data->imageViewer) return 0;
+    return _data->imageViewer->GetColorWindow();
+}
+
+- (double)currentLevel {
+    if (!_data->imageViewer) return 0;
+    return _data->imageViewer->GetColorLevel();
+}
+
+// --------------------------------------------------------------------------
 #pragma mark - Rendering
 // --------------------------------------------------------------------------
 - (void)render {
-    if (_data->renderWindow) {
+    if (_data->isDICOMMode && _data->imageViewer) {
+        _data->imageViewer->Render();
+    } else if (_data->renderWindow) {
         _data->renderWindow->Render();
+    }
+
+    // Debug: Print OpenGL context information after first render
+    static BOOL didLogOnce = NO;
+    if (!didLogOnce) {
+        didLogOnce = YES;
+        const char *version = (const char *)glGetString(GL_VERSION);
+        const char *renderer = (const char *)glGetString(GL_RENDERER);
+        const char *glslVersion = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
+        NSLog(@"[VTKBridge] GL_VERSION: %s", version ?: "(null)");
+        NSLog(@"[VTKBridge] GL_RENDERER: %s", renderer ?: "(null)");
+        NSLog(@"[VTKBridge] GL_SHADING_LANGUAGE_VERSION: %s", glslVersion ?: "(null)");
+        NSLog(@"[VTKBridge] RenderWindow class: %s",
+              _data->renderWindow->GetClassName());
+#if TARGET_OS_IPHONE
+        NSLog(@"[VTKBridge] Build target: iOS");
+#else
+        NSLog(@"[VTKBridge] Build target: macOS");
+#endif
     }
 }
 
@@ -195,7 +331,6 @@ struct VTKBridgeData {
 
 #if !TARGET_OS_IPHONE
     // VTK's internal vtkCocoaView does not auto-resize with our container.
-    // Manually resize it to match.
     vtkCocoaRenderWindow *cocoaWin =
         vtkCocoaRenderWindow::SafeDownCast(_data->renderWindow);
     if (cocoaWin) {
@@ -207,7 +342,11 @@ struct VTKBridgeData {
     }
 #endif
 
-    _data->renderer->ResetCameraClippingRange();
+    if (_data->isDICOMMode && _data->imageViewer) {
+        _data->renderer->ResetCamera();
+    } else {
+        _data->renderer->ResetCameraClippingRange();
+    }
     [self render];
 }
 

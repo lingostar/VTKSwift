@@ -16,7 +16,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/// Manages a VTK rendering pipeline that displays a 3D sphere.
+/// Manages a VTK rendering pipeline.
 /// Wraps VTK C++ objects behind an Objective-C interface for Swift interop.
 @interface VTKBridge : NSObject
 
@@ -24,8 +24,49 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param frame The initial frame rectangle for the render view.
 - (instancetype)initWithFrame:(CGRect)frame;
 
+// --------------------------------------------------------------------------
+#pragma mark - Primitives
+// --------------------------------------------------------------------------
+
 /// Set up the VTK rendering pipeline and add a sphere actor.
 - (void)setupSphere;
+
+// --------------------------------------------------------------------------
+#pragma mark - DICOM
+// --------------------------------------------------------------------------
+
+/// Load a DICOM directory and set up image viewer pipeline.
+/// @param path Absolute path to a directory containing DICOM files.
+/// @return YES if loading succeeded, NO otherwise.
+- (BOOL)loadDICOMDirectory:(NSString *)path;
+
+/// Total number of slices in the loaded DICOM volume.
+@property (nonatomic, readonly) NSInteger sliceCount;
+
+/// Current slice index.
+@property (nonatomic, readonly) NSInteger currentSlice;
+
+/// Minimum slice index.
+@property (nonatomic, readonly) NSInteger sliceMin;
+
+/// Maximum slice index.
+@property (nonatomic, readonly) NSInteger sliceMax;
+
+/// Set the displayed slice index.
+- (void)setSlice:(NSInteger)sliceIndex;
+
+/// Set the Window/Level for DICOM display.
+- (void)setWindow:(double)window level:(double)level;
+
+/// Current window value.
+@property (nonatomic, readonly) double currentWindow;
+
+/// Current level value.
+@property (nonatomic, readonly) double currentLevel;
+
+// --------------------------------------------------------------------------
+#pragma mark - Rendering
+// --------------------------------------------------------------------------
 
 /// Trigger a render pass.
 - (void)render;
