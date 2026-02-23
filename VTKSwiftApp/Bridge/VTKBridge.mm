@@ -25,10 +25,13 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 #include "vtkInteractorStyleTrackballCamera.h"
 #include "vtkCamera.h"
 
-// DICOM support
+// DICOM support (using primitives available on all platforms)
 #include "vtkDICOMImageReader.h"
-#include "vtkImageViewer2.h"
 #include "vtkImageData.h"
+#include "vtkImageActor.h"
+#include "vtkImageMapper3D.h"
+#include "vtkImageMapToColors.h"
+#include "vtkWindowLevelLookupTable.h"
 #include "vtkInteractorStyleImage.h"
 
 #if TARGET_OS_IPHONE
@@ -49,10 +52,17 @@ struct VTKBridgeData {
     vtkSmartPointer<vtkRenderWindow>                 renderWindow;
     vtkSmartPointer<vtkRenderWindowInteractor>       interactor;
 
-    // DICOM-specific
-    vtkSmartPointer<vtkImageViewer2>                 imageViewer;
+    // DICOM-specific (manual pipeline replacing vtkImageViewer2)
     vtkSmartPointer<vtkDICOMImageReader>             dicomReader;
+    vtkSmartPointer<vtkWindowLevelLookupTable>       dicomLUT;
+    vtkSmartPointer<vtkImageMapToColors>             dicomColors;
+    vtkSmartPointer<vtkImageActor>                   dicomActor;
     bool                                             isDICOMMode = false;
+    int                                              dicomSliceMin = 0;
+    int                                              dicomSliceMax = 0;
+    int                                              dicomCurrentSlice = 0;
+    double                                           dicomWindow = 400.0;
+    double                                           dicomLevel = 40.0;
 };
 
 // --------------------------------------------------------------------------
@@ -211,21 +221,37 @@ struct VTKBridgeData {
     int *dims = imageData->GetDimensions();
     NSLog(@"[VTKBridge] DICOM loaded: %d x %d x %d slices", dims[0], dims[1], dims[2]);
 
-    // Create image viewer
-    _data->imageViewer = vtkSmartPointer<vtkImageViewer2>::New();
-    _data->imageViewer->SetInputConnection(_data->dicomReader->GetOutputPort());
-    _data->imageViewer->SetRenderWindow(_data->renderWindow);
-    _data->imageViewer->SetRenderer(_data->renderer);
-    _data->imageViewer->SetSliceOrientationToXY();
+    // Compute slice range from Z dimension
+    _data->dicomSliceMin = 0;
+    _data->dicomSliceMax = dims[2] - 1;
+    _data->dicomCurrentSlice = (_data->dicomSliceMin + _data->dicomSliceMax) / 2;
 
-    // Set initial slice to middle
-    int sliceMin = _data->imageViewer->GetSliceMin();
-    int sliceMax = _data->imageViewer->GetSliceMax();
-    _data->imageViewer->SetSlice((sliceMin + sliceMax) / 2);
+    // Default Window/Level for CT
+    _data->dicomWindow = 400.0;
+    _data->dicomLevel = 40.0;
 
-    // Set default Window/Level for CT (bone window)
-    _data->imageViewer->SetColorWindow(400);
-    _data->imageViewer->SetColorLevel(40);
+    // Build lookup table for window/level mapping
+    _data->dicomLUT = vtkSmartPointer<vtkWindowLevelLookupTable>::New();
+    [self updateLUT];
+
+    // Map scalars through the lookup table
+    _data->dicomColors = vtkSmartPointer<vtkImageMapToColors>::New();
+    _data->dicomColors->SetLookupTable(_data->dicomLUT);
+    _data->dicomColors->SetInputConnection(_data->dicomReader->GetOutputPort());
+    _data->dicomColors->Update();
+
+    // Create image actor
+    _data->dicomActor = vtkSmartPointer<vtkImageActor>::New();
+    _data->dicomActor->GetMapper()->SetInputConnection(_data->dicomColors->GetOutputPort());
+
+    // Set display extent to show the initial slice (XY orientation)
+    _data->dicomActor->SetDisplayExtent(
+        imageData->GetExtent()[0], imageData->GetExtent()[1],  // X range
+        imageData->GetExtent()[2], imageData->GetExtent()[3],  // Y range
+        _data->dicomCurrentSlice, _data->dicomCurrentSlice     // Z = single slice
+    );
+
+    _data->renderer->AddActor(_data->dicomActor);
 
     // Switch interactor style to image mode
     vtkSmartPointer<vtkInteractorStyleImage> imageStyle =
@@ -235,72 +261,85 @@ struct VTKBridgeData {
     // Set DICOM background to black
     _data->renderer->SetBackground(0.0, 0.0, 0.0);
     _data->renderer->SetGradientBackground(false);
+    _data->renderer->ResetCamera();
 
     _data->isDICOMMode = true;
 
     NSLog(@"[VTKBridge] DICOM viewer ready: slices %d-%d, W/L: %.0f/%.0f",
-          sliceMin, sliceMax,
-          _data->imageViewer->GetColorWindow(),
-          _data->imageViewer->GetColorLevel());
+          _data->dicomSliceMin, _data->dicomSliceMax,
+          _data->dicomWindow, _data->dicomLevel);
 
     return YES;
 }
 
+- (void)updateLUT {
+    if (!_data->dicomLUT) return;
+    _data->dicomLUT->SetWindow(_data->dicomWindow);
+    _data->dicomLUT->SetLevel(_data->dicomLevel);
+    _data->dicomLUT->Build();
+}
+
 - (NSInteger)sliceCount {
-    if (!_data->imageViewer) return 0;
-    return _data->imageViewer->GetSliceMax() - _data->imageViewer->GetSliceMin() + 1;
+    if (!_data->isDICOMMode) return 0;
+    return _data->dicomSliceMax - _data->dicomSliceMin + 1;
 }
 
 - (NSInteger)currentSlice {
-    if (!_data->imageViewer) return 0;
-    return _data->imageViewer->GetSlice();
+    if (!_data->isDICOMMode) return 0;
+    return _data->dicomCurrentSlice;
 }
 
 - (NSInteger)sliceMin {
-    if (!_data->imageViewer) return 0;
-    return _data->imageViewer->GetSliceMin();
+    return _data->dicomSliceMin;
 }
 
 - (NSInteger)sliceMax {
-    if (!_data->imageViewer) return 0;
-    return _data->imageViewer->GetSliceMax();
+    return _data->dicomSliceMax;
 }
 
 - (void)setSlice:(NSInteger)sliceIndex {
-    if (!_data->imageViewer) return;
+    if (!_data->isDICOMMode || !_data->dicomActor) return;
     int clamped = (int)sliceIndex;
-    if (clamped < _data->imageViewer->GetSliceMin())
-        clamped = _data->imageViewer->GetSliceMin();
-    if (clamped > _data->imageViewer->GetSliceMax())
-        clamped = _data->imageViewer->GetSliceMax();
-    _data->imageViewer->SetSlice(clamped);
+    if (clamped < _data->dicomSliceMin) clamped = _data->dicomSliceMin;
+    if (clamped > _data->dicomSliceMax) clamped = _data->dicomSliceMax;
+    _data->dicomCurrentSlice = clamped;
+
+    // Update display extent to show the new slice
+    vtkImageData *imageData = _data->dicomReader->GetOutput();
+    if (imageData) {
+        _data->dicomActor->SetDisplayExtent(
+            imageData->GetExtent()[0], imageData->GetExtent()[1],
+            imageData->GetExtent()[2], imageData->GetExtent()[3],
+            clamped, clamped
+        );
+    }
     [self render];
 }
 
 - (void)setWindow:(double)window level:(double)level {
-    if (!_data->imageViewer) return;
-    _data->imageViewer->SetColorWindow(window);
-    _data->imageViewer->SetColorLevel(level);
+    if (!_data->isDICOMMode) return;
+    _data->dicomWindow = window;
+    _data->dicomLevel = level;
+    [self updateLUT];
+    if (_data->dicomColors) {
+        _data->dicomColors->Update();
+    }
     [self render];
 }
 
 - (double)currentWindow {
-    if (!_data->imageViewer) return 0;
-    return _data->imageViewer->GetColorWindow();
+    return _data->dicomWindow;
 }
 
 - (double)currentLevel {
-    if (!_data->imageViewer) return 0;
-    return _data->imageViewer->GetColorLevel();
+    return _data->dicomLevel;
 }
 
 // --------------------------------------------------------------------------
 #pragma mark - Rendering
 // --------------------------------------------------------------------------
 - (void)render {
-    if (_data->isDICOMMode && _data->imageViewer) {
-        _data->imageViewer->Render();
-    } else if (_data->renderWindow) {
+    if (_data->renderWindow) {
         _data->renderWindow->Render();
     }
 
@@ -342,7 +381,7 @@ struct VTKBridgeData {
     }
 #endif
 
-    if (_data->isDICOMMode && _data->imageViewer) {
+    if (_data->isDICOMMode) {
         _data->renderer->ResetCamera();
     } else {
         _data->renderer->ResetCameraClippingRange();
