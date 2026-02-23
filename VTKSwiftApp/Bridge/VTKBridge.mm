@@ -66,17 +66,48 @@ struct VTKBridgeData {
 };
 
 // --------------------------------------------------------------------------
+// Container view that auto-resizes VTK's internal GL view on layout changes.
+// SwiftUI's NSViewRepresentable/UIViewRepresentable doesn't reliably call
+// updateNSView on frame changes alone; this ensures VTK stays in sync.
+// --------------------------------------------------------------------------
+@class VTKBridge;
+
+#if TARGET_OS_IPHONE
+@interface VTKContainerView : UIView
+@property (nonatomic, weak) VTKBridge *bridge;
+@end
+
+@implementation VTKContainerView
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    if (self.bridge && self.bounds.size.width > 0 && self.bounds.size.height > 0) {
+        [self.bridge resizeTo:self.bounds.size];
+    }
+}
+@end
+
+#else
+@interface VTKContainerView : NSView
+@property (nonatomic, weak) VTKBridge *bridge;
+@end
+
+@implementation VTKContainerView
+- (void)layout {
+    [super layout];
+    if (self.bridge && self.bounds.size.width > 0 && self.bounds.size.height > 0) {
+        [self.bridge resizeTo:self.bounds.size];
+    }
+}
+@end
+#endif
+
+// --------------------------------------------------------------------------
 #pragma mark - VTKBridge
 // --------------------------------------------------------------------------
 @implementation VTKBridge {
     VTKBridgeData *_data;
     CGRect _frame;
-
-#if TARGET_OS_IPHONE
-    UIView *_renderView;
-#else
-    NSView *_renderView;
-#endif
+    VTKContainerView *_renderView;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame {
@@ -132,7 +163,8 @@ struct VTKBridgeData {
 
 #if TARGET_OS_IPHONE
     // ---- iOS / iPadOS ----
-    _renderView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, w, h)];
+    _renderView = [[VTKContainerView alloc] initWithFrame:CGRectMake(0, 0, w, h)];
+    _renderView.bridge = self;
 
     vtkSmartPointer<vtkIOSRenderWindow> renWin =
         vtkSmartPointer<vtkIOSRenderWindow>::New();
@@ -146,7 +178,8 @@ struct VTKBridgeData {
 
 #else
     // ---- macOS ----
-    _renderView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, w, h)];
+    _renderView = [[VTKContainerView alloc] initWithFrame:NSMakeRect(0, 0, w, h)];
+    _renderView.bridge = self;
     _renderView.wantsLayer = YES;
 
     vtkSmartPointer<vtkCocoaRenderWindow> renWin =
