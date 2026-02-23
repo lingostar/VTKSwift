@@ -4,6 +4,7 @@ import SwiftUI
 struct SphereView: View {
     var body: some View {
         VTKView(mode: .sphere)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .ignoresSafeArea()
             .navigationTitle("Sphere")
     }

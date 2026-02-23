@@ -89,15 +89,34 @@ struct VTKBridgeData {
 #else
 @interface VTKContainerView : NSView
 @property (nonatomic, weak) VTKBridge *bridge;
+@property (nonatomic) BOOL didInitialRender;
 @end
 
 @implementation VTKContainerView
+
+- (void)viewDidMoveToWindow {
+    [super viewDidMoveToWindow];
+    // Trigger initial render once view is in a window (GL context available)
+    if (self.window && self.bridge && !self.didInitialRender) {
+        self.didInitialRender = YES;
+        CGSize sz = self.bounds.size;
+        if (sz.width > 0 && sz.height > 0) {
+            [self.bridge resizeTo:sz];
+        }
+    }
+}
+
 - (void)layout {
     [super layout];
     if (self.bridge && self.bounds.size.width > 0 && self.bounds.size.height > 0) {
         [self.bridge resizeTo:self.bounds.size];
     }
 }
+
+- (BOOL)isFlipped {
+    return YES;  // Match SwiftUI's coordinate system
+}
+
 @end
 #endif
 
@@ -181,6 +200,7 @@ struct VTKBridgeData {
     _renderView = [[VTKContainerView alloc] initWithFrame:NSMakeRect(0, 0, w, h)];
     _renderView.bridge = self;
     _renderView.wantsLayer = YES;
+    _renderView.autoresizesSubviews = YES;
 
     vtkSmartPointer<vtkCocoaRenderWindow> renWin =
         vtkSmartPointer<vtkCocoaRenderWindow>::New();
@@ -412,10 +432,16 @@ struct VTKBridgeData {
 - (void)resizeTo:(CGSize)size {
     if (!_data->renderWindow || size.width <= 0 || size.height <= 0) return;
 
-    _data->renderWindow->SetSize((int)size.width, (int)size.height);
+    int w = (int)size.width;
+    int h = (int)size.height;
+
+    _data->renderWindow->SetSize(w, h);
+
+    // Render first to ensure VTK creates its internal GL view
+    _data->renderWindow->Render();
 
 #if !TARGET_OS_IPHONE
-    // VTK's internal vtkCocoaView does not auto-resize with our container.
+    // Now the GL view exists — resize it and set autoresizing so it tracks the parent.
     vtkCocoaRenderWindow *cocoaWin =
         vtkCocoaRenderWindow::SafeDownCast(_data->renderWindow);
     if (cocoaWin) {
@@ -423,6 +449,7 @@ struct VTKBridgeData {
         if (winId) {
             NSView *glView = (__bridge NSView *)winId;
             [glView setFrame:NSMakeRect(0, 0, size.width, size.height)];
+            glView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
         }
     }
 #endif
@@ -432,7 +459,9 @@ struct VTKBridgeData {
     } else {
         _data->renderer->ResetCameraClippingRange();
     }
-    [self render];
+
+    // Render again at the correct size
+    _data->renderWindow->Render();
 }
 
 // --------------------------------------------------------------------------
