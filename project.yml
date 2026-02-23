@@ -1,0 +1,101 @@
+name: VTKSwift
+options:
+  bundleIdPrefix: com.developeracademy
+  deploymentTarget:
+    iOS: "16.0"
+    macOS: "14.0"
+  generateEmptyDirectories: true
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: 4QG3GC35LA
+    CLANG_CXX_LANGUAGE_STANDARD: c++17
+
+targets:
+
+  # ---- iOS / iPadOS App ----
+  VTKSwiftApp-iOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: VTKSwiftApp
+        excludes:
+          - "**/.DS_Store"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.developeracademy.VTKSwiftApp
+        PRODUCT_NAME: VTKSwift
+        INFOPLIST_FILE: VTKSwiftApp/Info.plist
+        SWIFT_OBJC_BRIDGING_HEADER: VTKSwiftApp/Bridge/VTKSwiftApp-Bridging-Header.h
+        TARGETED_DEVICE_FAMILY: "2"  # iPad only
+        EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
+        HEADER_SEARCH_PATHS[sdk=iphoneos*]:
+          - "$(PROJECT_DIR)/vtk-install/ios-arm64/include/vtk-9.4"
+        HEADER_SEARCH_PATHS[sdk=iphonesimulator*]:
+          - "$(PROJECT_DIR)/vtk-install/ios-sim-arm64/include/vtk-9.4"
+        LIBRARY_SEARCH_PATHS[sdk=iphoneos*]:
+          - "$(PROJECT_DIR)/vtk-install/ios-arm64/lib"
+        LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]:
+          - "$(PROJECT_DIR)/vtk-install/ios-sim-arm64/lib"
+        OTHER_LDFLAGS:
+          - "-lVTK"
+          - "-lz"
+          - "-framework OpenGLES"
+          - "-framework UIKit"
+          - "-framework QuartzCore"
+        CLANG_CXX_LANGUAGE_STANDARD: c++17
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+    dependencies: []
+    preBuildScripts: []
+
+  # ---- macOS App ----
+  VTKSwiftApp-macOS:
+    type: application
+    platform: macOS
+    sources:
+      - path: VTKSwiftApp
+        excludes:
+          - "**/.DS_Store"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.developeracademy.VTKSwiftApp
+        PRODUCT_NAME: VTKSwift
+        INFOPLIST_FILE: VTKSwiftApp/Info.plist
+        SWIFT_OBJC_BRIDGING_HEADER: VTKSwiftApp/Bridge/VTKSwiftApp-Bridging-Header.h
+        HEADER_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/vtk-install/macos-arm64/include/vtk-9.4"
+        LIBRARY_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/vtk-install/macos-arm64/lib"
+        OTHER_LDFLAGS:
+          - "-lVTK"
+          - "-lz"
+          - "-framework OpenGL"
+          - "-framework Cocoa"
+          - "-framework QuartzCore"
+        CLANG_CXX_LANGUAGE_STANDARD: c++17
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+    dependencies: []
+
+schemes:
+  VTKSwift-iOS:
+    build:
+      targets:
+        VTKSwiftApp-iOS: all
+    run:
+      config: Debug
+  VTKSwift-macOS:
+    build:
+      targets:
+        VTKSwiftApp-macOS: all
+    run:
+      config: Debug

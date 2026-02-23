@@ -1,0 +1,34 @@
+# VTK build artifacts (very large, rebuild with scripts/build_vtk.sh)
+vtk-src/
+vtk-build/
+vtk-install/
+
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xcuserstate
+
+# Frameworks (generated)
+Frameworks/
+
+# Old scaffold (replaced by VTKSwiftApp)
+VTKSwift/
+VTKSwiftTests/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Claude
+.claude/
+
+# Misc
+*.swp
+*~
