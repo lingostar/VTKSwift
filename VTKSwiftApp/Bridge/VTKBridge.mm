@@ -91,11 +91,24 @@ struct VTKBridgeData {
 
 - (void)dealloc {
     if (_data) {
-        if (_data->interactor) {
-            _data->interactor->TerminateApp();
+        // Release DICOM resources first
+        _data->dicomActor = nullptr;
+        _data->dicomColors = nullptr;
+        _data->dicomLUT = nullptr;
+        _data->dicomReader = nullptr;
+
+        // Detach renderer before finalize to avoid GL teardown crashes
+        if (_data->renderWindow && _data->renderer) {
+            _data->renderWindow->RemoveRenderer(_data->renderer);
         }
+        if (_data->interactor) {
+            _data->interactor->SetRenderWindow(nullptr);
+            _data->interactor = nullptr;
+        }
+        _data->renderer = nullptr;
         if (_data->renderWindow) {
             _data->renderWindow->Finalize();
+            _data->renderWindow = nullptr;
         }
         delete _data;
         _data = nullptr;
