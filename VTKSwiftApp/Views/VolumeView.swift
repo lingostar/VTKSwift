@@ -198,38 +198,35 @@ struct VolumeView: View {
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
-
-            let didStart = url.startAccessingSecurityScopedResource()
-            defer {
-                if didStart { url.stopAccessingSecurityScopedResource() }
-            }
-
-            loadVolume(from: url.path)
+            loadVolume(from: url)
 
         case .failure(let error):
             errorMessage = error.localizedDescription
         }
     }
 
-    private func loadVolume(from path: String) {
+    private func loadVolume(from url: URL) {
         errorMessage = nil
         isLoading = true
 
-        // Volume rendering can take a moment — run on background
-        DispatchQueue.global(qos: .userInitiated).async {
-            let newBridge = VTKBridge(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
-            let success = newBridge.loadVolume(fromDICOMDirectory: path)
+        let didStart = url.startAccessingSecurityScopedResource()
 
-            DispatchQueue.main.async {
-                isLoading = false
-                if success {
-                    bridge = newBridge
-                    selectedPreset = .softTissue
-                    opacityScale = 1.0
-                    isLoaded = true
-                } else {
-                    errorMessage = "Failed to load volume from selected directory.\nEnsure the folder contains valid DICOM files."
-                }
+        // VTKBridge creates NSView — must stay on main thread.
+        // Use asyncAfter so SwiftUI can render the loading indicator first.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            let newBridge = VTKBridge(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
+            let success = newBridge.loadVolume(fromDICOMDirectory: url.path)
+
+            if didStart { url.stopAccessingSecurityScopedResource() }
+
+            isLoading = false
+            if success {
+                bridge = newBridge
+                selectedPreset = .softTissue
+                opacityScale = 1.0
+                isLoaded = true
+            } else {
+                errorMessage = "Failed to load volume from selected directory.\nEnsure the folder contains valid DICOM files."
             }
         }
     }

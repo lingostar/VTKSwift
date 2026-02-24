@@ -12,6 +12,7 @@
 
 // Initialize VTK rendering module factories — CRITICAL for OpenGL2 rendering.
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
+VTK_MODULE_INIT(vtkRenderingVolumeOpenGL2);
 VTK_MODULE_INIT(vtkInteractionStyle);
 
 #include "vtkSmartPointer.h"
