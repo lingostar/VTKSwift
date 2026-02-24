@@ -3,39 +3,54 @@ import SwiftUI
 import AppKit
 #endif
 
-/// Displays DICOM medical images using VTK's vtkDICOMImageReader + vtkImageViewer2.
+// MARK: - DICOM View State
+
+/// Persists DICOM viewer state across NavigationSplitView re-navigation.
+/// Owned by ContentView as @StateObject so it survives detail-view recreation.
+final class DICOMViewState: ObservableObject {
+    @Published var bridge: VTKBridge?
+    @Published var isLoaded = false
+    @Published var sliceIndex: Double = 0
+    @Published var sliceMin: Double = 0
+    @Published var sliceMax: Double = 0
+    @Published var errorMessage: String?
+
+    /// Path of the loaded DICOM directory (for reload on view recreation).
+    var loadedPath: String?
+    /// Security-scoped bookmark data for sandboxed re-access.
+    var bookmarkData: Data?
+}
+
+// MARK: - DICOM View
+
+/// Displays DICOM medical images using VTK with slice navigation.
 struct DICOMView: View {
-    @State private var bridge: VTKBridge?
-    @State private var isLoaded = false
-    @State private var sliceIndex: Double = 0
-    @State private var sliceMin: Double = 0
-    @State private var sliceMax: Double = 0
+    @ObservedObject var state: DICOMViewState
     @State private var showFilePicker = false
-    @State private var errorMessage: String?
 
     var body: some View {
         VStack(spacing: 0) {
-            if isLoaded, let bridge {
+            if state.isLoaded {
                 // DICOM VTK rendering view
-                DICOMRenderView(bridge: bridge)
+                DICOMRenderView(state: state)
                     .ignoresSafeArea()
 
                 // Slice navigation controls
                 VStack(spacing: 8) {
                     HStack {
-                        Text("Slice: \(Int(sliceIndex))")
+                        Text("Slice: \(Int(state.sliceIndex))")
                             .monospacedDigit()
                         Spacer()
-                        Text("\(Int(sliceMin))–\(Int(sliceMax))")
+                        Text("\(Int(state.sliceMin))–\(Int(state.sliceMax))")
                             .foregroundStyle(.secondary)
                             .font(.caption)
                     }
 
-                    Slider(value: $sliceIndex,
-                           in: sliceMin...max(sliceMin, sliceMax),
+                    Slider(value: $state.sliceIndex,
+                           in: state.sliceMin...max(state.sliceMin, state.sliceMax),
                            step: 1)
-                    .onChange(of: sliceIndex) { newValue in
-                        bridge.setSlice(Int(newValue))
+                    .onChange(of: state.sliceIndex) { newValue in
+                        state.bridge?.setSlice(Int(newValue))
                     }
                 }
                 .padding(.horizontal)
@@ -64,7 +79,7 @@ struct DICOMView: View {
                     }
                     .buttonStyle(.borderedProminent)
 
-                    if let errorMessage {
+                    if let errorMessage = state.errorMessage {
                         Text(errorMessage)
                             .foregroundStyle(.red)
                             .font(.caption)
@@ -75,7 +90,7 @@ struct DICOMView: View {
         }
         .navigationTitle("DICOM Reader")
         .toolbar {
-            if isLoaded {
+            if state.isLoaded {
                 ToolbarItem(placement: .automatic) {
                     Button {
                         showFilePicker = true
@@ -99,44 +114,74 @@ struct DICOMView: View {
         case .success(let urls):
             guard let url = urls.first else { return }
 
-            // Start accessing security-scoped resource
             let didStart = url.startAccessingSecurityScopedResource()
-            defer {
-                if didStart { url.stopAccessingSecurityScopedResource() }
-            }
+
+            // Save bookmark for future re-access
+            #if os(macOS)
+            state.bookmarkData = try? url.bookmarkData(
+                options: .withSecurityScope,
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            )
+            #else
+            state.bookmarkData = try? url.bookmarkData(
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            )
+            #endif
 
             loadDICOM(from: url.path)
 
+            if didStart { url.stopAccessingSecurityScopedResource() }
+
         case .failure(let error):
-            errorMessage = error.localizedDescription
+            state.errorMessage = error.localizedDescription
         }
     }
 
     private func loadDICOM(from path: String) {
-        errorMessage = nil
+        state.errorMessage = nil
 
         let newBridge = VTKBridge(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
         let success = newBridge.loadDICOMDirectory(path)
 
         if success {
-            bridge = newBridge
-            sliceMin = Double(newBridge.sliceMin)
-            sliceMax = Double(newBridge.sliceMax)
-            sliceIndex = Double(newBridge.currentSlice)
-            isLoaded = true
+            state.bridge = newBridge
+            state.sliceMin = Double(newBridge.sliceMin)
+            state.sliceMax = Double(newBridge.sliceMax)
+            state.sliceIndex = Double(newBridge.currentSlice)
+            state.loadedPath = path
+            state.isLoaded = true
         } else {
-            errorMessage = "Failed to load DICOM files from selected directory."
+            state.errorMessage = "Failed to load DICOM files from selected directory."
         }
     }
 }
 
 // MARK: - DICOM Render View (Platform-specific)
+// Uses Coordinator pattern: creates a fresh VTKBridge each time the
+// NSView/UIView is created, reloading data from the stored path.
+// This avoids stale OpenGL context when SwiftUI recreates the view.
 
 #if os(iOS)
 private struct DICOMRenderView: UIViewRepresentable {
-    let bridge: VTKBridge
+    @ObservedObject var state: DICOMViewState
+
+    func makeCoordinator() -> Coordinator { Coordinator(state: state) }
 
     func makeUIView(context: Context) -> UIView {
+        let bridge = VTKBridge(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
+        context.coordinator.bridge = bridge
+
+        // Reload data if previously loaded
+        if let path = resolveAccessiblePath() {
+            let success = bridge.loadDICOMDirectory(path)
+            if success {
+                bridge.setSlice(Int(state.sliceIndex))
+                state.bridge = bridge
+            }
+        }
+
         let view = bridge.renderView
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             bridge.render()
@@ -145,17 +190,53 @@ private struct DICOMRenderView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
+        guard let bridge = context.coordinator.bridge else { return }
         let size = uiView.bounds.size
         if size.width > 0 && size.height > 0 {
             bridge.resize(to: size)
         }
     }
+
+    private func resolveAccessiblePath() -> String? {
+        if let bookmarkData = state.bookmarkData {
+            var isStale = false
+            if let url = try? URL(
+                resolvingBookmarkData: bookmarkData,
+                bookmarkDataIsStale: &isStale
+            ) {
+                _ = url.startAccessingSecurityScopedResource()
+                return url.path
+            }
+        }
+        return state.loadedPath
+    }
+
+    class Coordinator {
+        var bridge: VTKBridge?
+        let state: DICOMViewState
+        init(state: DICOMViewState) { self.state = state }
+    }
 }
+
 #elseif os(macOS)
 private struct DICOMRenderView: NSViewRepresentable {
-    let bridge: VTKBridge
+    @ObservedObject var state: DICOMViewState
+
+    func makeCoordinator() -> Coordinator { Coordinator(state: state) }
 
     func makeNSView(context: Context) -> NSView {
+        let bridge = VTKBridge(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
+        context.coordinator.bridge = bridge
+
+        // Reload data if previously loaded
+        if let path = resolveAccessiblePath() {
+            let success = bridge.loadDICOMDirectory(path)
+            if success {
+                bridge.setSlice(Int(state.sliceIndex))
+                state.bridge = bridge
+            }
+        }
+
         let view = bridge.renderView
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             bridge.render()
@@ -164,10 +245,33 @@ private struct DICOMRenderView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
+        guard let bridge = context.coordinator.bridge else { return }
         let size = nsView.bounds.size
         if size.width > 0 && size.height > 0 {
             bridge.resize(to: size)
         }
+    }
+
+    private func resolveAccessiblePath() -> String? {
+        if let bookmarkData = state.bookmarkData {
+            var isStale = false
+            if let url = try? URL(
+                resolvingBookmarkData: bookmarkData,
+                options: .withSecurityScope,
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            ) {
+                _ = url.startAccessingSecurityScopedResource()
+                return url.path
+            }
+        }
+        return state.loadedPath
+    }
+
+    class Coordinator {
+        var bridge: VTKBridge?
+        let state: DICOMViewState
+        init(state: DICOMViewState) { self.state = state }
     }
 }
 #endif

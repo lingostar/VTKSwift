@@ -28,6 +28,8 @@ enum SidebarItem: Hashable {
 
 struct ContentView: View {
     @State private var selectedItem: SidebarItem? = .sphere
+    @StateObject private var dicomState = DICOMViewState()
+    @StateObject private var volumeState = VolumeViewState()
 
     var body: some View {
         NavigationSplitView {
@@ -56,9 +58,9 @@ struct ContentView: View {
             case .sphere:
                 SphereView()
             case .dicomViewer:
-                DICOMView()
+                DICOMView(state: dicomState)
             case .volumeViewer:
-                VolumeView()
+                VolumeView(state: volumeState)
             case nil:
                 Text("Select an item from the sidebar")
                     .foregroundStyle(.secondary)
