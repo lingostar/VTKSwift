@@ -34,6 +34,17 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 #include "vtkWindowLevelLookupTable.h"
 #include "vtkInteractorStyleImage.h"
 
+// Volume rendering
+#include "vtkSmartVolumeMapper.h"
+#include "vtkVolumeProperty.h"
+#include "vtkColorTransferFunction.h"
+#include "vtkPiecewiseFunction.h"
+#include "vtkVolume.h"
+
+// Data preprocessing
+#include "vtkImageThreshold.h"
+#include "vtkImageResample.h"
+
 #if TARGET_OS_IPHONE
 #include "vtkIOSRenderWindow.h"
 #include "vtkIOSRenderWindowInteractor.h"
@@ -63,6 +74,18 @@ struct VTKBridgeData {
     int                                              dicomCurrentSlice = 0;
     double                                           dicomWindow = 400.0;
     double                                           dicomLevel = 40.0;
+
+    // Volume rendering pipeline
+    vtkSmartPointer<vtkDICOMImageReader>             volumeReader;
+    vtkSmartPointer<vtkSmartVolumeMapper>            volumeMapper;
+    vtkSmartPointer<vtkVolumeProperty>               volumeProperty;
+    vtkSmartPointer<vtkColorTransferFunction>        volumeColorTF;
+    vtkSmartPointer<vtkPiecewiseFunction>            volumeOpacityTF;
+    vtkSmartPointer<vtkPiecewiseFunction>            volumeGradientTF;
+    vtkSmartPointer<vtkVolume>                       volume;
+    bool                                             isVolumeMode = false;
+    VTKVolumePreset                                  volumePreset = VTKVolumePresetSoftTissue;
+    double                                           volumeOpacityScale = 1.0;
 };
 
 // --------------------------------------------------------------------------
@@ -141,6 +164,15 @@ struct VTKBridgeData {
 
 - (void)dealloc {
     if (_data) {
+        // Release volume rendering resources
+        _data->volume = nullptr;
+        _data->volumeMapper = nullptr;
+        _data->volumeProperty = nullptr;
+        _data->volumeColorTF = nullptr;
+        _data->volumeOpacityTF = nullptr;
+        _data->volumeGradientTF = nullptr;
+        _data->volumeReader = nullptr;
+
         // Release DICOM resources first
         _data->dicomActor = nullptr;
         _data->dicomColors = nullptr;
@@ -402,6 +434,246 @@ struct VTKBridgeData {
 }
 
 // --------------------------------------------------------------------------
+#pragma mark - Volume Rendering
+// --------------------------------------------------------------------------
+- (BOOL)loadVolumeFromDICOMDirectory:(NSString *)path {
+    if (!path || path.length == 0) return NO;
+
+    const char *dirPath = [path UTF8String];
+
+    // Create DICOM reader
+    _data->volumeReader = vtkSmartPointer<vtkDICOMImageReader>::New();
+    _data->volumeReader->SetDirectoryName(dirPath);
+    _data->volumeReader->Update();
+
+    vtkImageData *imageData = _data->volumeReader->GetOutput();
+    if (!imageData || imageData->GetNumberOfPoints() == 0) {
+        NSLog(@"[VTKBridge] Failed to load volume DICOM from: %@", path);
+        _data->volumeReader = nullptr;
+        return NO;
+    }
+
+    int *dims = imageData->GetDimensions();
+    double *spacing = imageData->GetSpacing();
+    NSLog(@"[VTKBridge] Volume loaded: %d x %d x %d, spacing: %.2f x %.2f x %.2f",
+          dims[0], dims[1], dims[2], spacing[0], spacing[1], spacing[2]);
+
+    // --- Data Preprocessing ---
+    // 1. Threshold: clamp air (HU < -1000) to -1000
+    vtkSmartPointer<vtkImageThreshold> threshold =
+        vtkSmartPointer<vtkImageThreshold>::New();
+    threshold->SetInputConnection(_data->volumeReader->GetOutputPort());
+    threshold->ThresholdByLower(-1000.0);
+    threshold->SetInValue(-1000.0);
+    threshold->ReplaceInOn();
+    threshold->ReplaceOutOff();
+    threshold->Update();
+
+    // 2. Resample for iPad memory constraints (if volume > 256^3)
+    vtkSmartPointer<vtkImageResample> resample;
+    vtkAlgorithmOutput *pipelineOutput = threshold->GetOutputPort();
+
+    long totalVoxels = (long)dims[0] * dims[1] * dims[2];
+    const long maxVoxels = 256L * 256 * 256; // ~16M voxels
+
+    if (totalVoxels > maxVoxels) {
+        double factor = pow((double)maxVoxels / totalVoxels, 1.0 / 3.0);
+        NSLog(@"[VTKBridge] Resampling volume by factor %.2f (voxels: %ld > %ld)",
+              factor, totalVoxels, maxVoxels);
+
+        resample = vtkSmartPointer<vtkImageResample>::New();
+        resample->SetInputConnection(threshold->GetOutputPort());
+        resample->SetAxisMagnificationFactor(0, factor);
+        resample->SetAxisMagnificationFactor(1, factor);
+        resample->SetAxisMagnificationFactor(2, factor);
+        resample->SetInterpolationModeToLinear();
+        resample->Update();
+        pipelineOutput = resample->GetOutputPort();
+    }
+
+    // --- Volume Mapper ---
+    _data->volumeMapper = vtkSmartPointer<vtkSmartVolumeMapper>::New();
+    _data->volumeMapper->SetInputConnection(pipelineOutput);
+    _data->volumeMapper->SetRequestedRenderModeToGPU();
+
+    // --- Transfer Functions ---
+    _data->volumeColorTF = vtkSmartPointer<vtkColorTransferFunction>::New();
+    _data->volumeOpacityTF = vtkSmartPointer<vtkPiecewiseFunction>::New();
+    _data->volumeGradientTF = vtkSmartPointer<vtkPiecewiseFunction>::New();
+
+    // --- Volume Property ---
+    _data->volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
+    _data->volumeProperty->SetColor(_data->volumeColorTF);
+    _data->volumeProperty->SetScalarOpacity(_data->volumeOpacityTF);
+    _data->volumeProperty->SetGradientOpacity(_data->volumeGradientTF);
+    _data->volumeProperty->SetInterpolationTypeToLinear();
+    _data->volumeProperty->ShadeOn();
+    _data->volumeProperty->SetAmbient(0.2);
+    _data->volumeProperty->SetDiffuse(0.7);
+    _data->volumeProperty->SetSpecular(0.3);
+    _data->volumeProperty->SetSpecularPower(20.0);
+
+    // --- Volume Actor ---
+    _data->volume = vtkSmartPointer<vtkVolume>::New();
+    _data->volume->SetMapper(_data->volumeMapper);
+    _data->volume->SetProperty(_data->volumeProperty);
+
+    // Apply default preset
+    _data->volumePreset = VTKVolumePresetSoftTissue;
+    [self applyVolumePreset:_data->volumePreset];
+
+    // Setup scene
+    _data->renderer->RemoveAllViewProps();
+    _data->renderer->AddVolume(_data->volume);
+    _data->renderer->SetBackground(0.0, 0.0, 0.0);
+    _data->renderer->SetGradientBackground(false);
+    _data->renderer->ResetCamera();
+
+    // Switch to trackball for 3D interaction
+    vtkSmartPointer<vtkInteractorStyleTrackballCamera> style =
+        vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
+    _data->interactor->SetInteractorStyle(style);
+
+    _data->isVolumeMode = true;
+
+    NSLog(@"[VTKBridge] Volume rendering ready (preset: SoftTissue)");
+    return YES;
+}
+
+- (void)applyVolumePreset:(VTKVolumePreset)preset {
+    if (!_data->volumeColorTF || !_data->volumeOpacityTF) return;
+
+    _data->volumePreset = preset;
+    _data->volumeColorTF->RemoveAllPoints();
+    _data->volumeOpacityTF->RemoveAllPoints();
+    _data->volumeGradientTF->RemoveAllPoints();
+
+    double s = _data->volumeOpacityScale;
+
+    switch (preset) {
+        case VTKVolumePresetSoftTissue: {
+            // W:400 L:40  → range -160 ~ 240
+            _data->volumeColorTF->AddRGBPoint(-1000, 0.0, 0.0, 0.0);
+            _data->volumeColorTF->AddRGBPoint(-160,  0.0, 0.0, 0.0);
+            _data->volumeColorTF->AddRGBPoint(-60,   0.55, 0.25, 0.15);
+            _data->volumeColorTF->AddRGBPoint(40,    0.88, 0.60, 0.50);
+            _data->volumeColorTF->AddRGBPoint(240,   1.0, 0.94, 0.90);
+            _data->volumeColorTF->AddRGBPoint(3000,  1.0, 1.0, 1.0);
+
+            _data->volumeOpacityTF->AddPoint(-1000, 0.0);
+            _data->volumeOpacityTF->AddPoint(-160,  0.0);
+            _data->volumeOpacityTF->AddPoint(-60,   0.0);
+            _data->volumeOpacityTF->AddPoint(40,    0.15 * s);
+            _data->volumeOpacityTF->AddPoint(240,   0.40 * s);
+            _data->volumeOpacityTF->AddPoint(3000,  0.60 * s);
+            break;
+        }
+        case VTKVolumePresetBone: {
+            // W:2000 L:300  → range -700 ~ 1300
+            _data->volumeColorTF->AddRGBPoint(-1000, 0.0, 0.0, 0.0);
+            _data->volumeColorTF->AddRGBPoint(-700,  0.0, 0.0, 0.0);
+            _data->volumeColorTF->AddRGBPoint(100,   0.55, 0.25, 0.15);
+            _data->volumeColorTF->AddRGBPoint(300,   0.90, 0.75, 0.60);
+            _data->volumeColorTF->AddRGBPoint(800,   1.0, 0.95, 0.85);
+            _data->volumeColorTF->AddRGBPoint(1300,  1.0, 1.0, 1.0);
+            _data->volumeColorTF->AddRGBPoint(3000,  1.0, 1.0, 1.0);
+
+            _data->volumeOpacityTF->AddPoint(-1000, 0.0);
+            _data->volumeOpacityTF->AddPoint(100,   0.0);
+            _data->volumeOpacityTF->AddPoint(200,   0.02 * s);
+            _data->volumeOpacityTF->AddPoint(300,   0.10 * s);
+            _data->volumeOpacityTF->AddPoint(800,   0.60 * s);
+            _data->volumeOpacityTF->AddPoint(1300,  0.85 * s);
+            _data->volumeOpacityTF->AddPoint(3000,  0.90 * s);
+            break;
+        }
+        case VTKVolumePresetLung: {
+            // W:1500 L:-600  → range -1350 ~ 150
+            _data->volumeColorTF->AddRGBPoint(-1350, 0.0, 0.0, 0.0);
+            _data->volumeColorTF->AddRGBPoint(-1000, 0.15, 0.15, 0.25);
+            _data->volumeColorTF->AddRGBPoint(-600,  0.40, 0.50, 0.70);
+            _data->volumeColorTF->AddRGBPoint(-300,  0.65, 0.70, 0.80);
+            _data->volumeColorTF->AddRGBPoint(0,     0.85, 0.55, 0.40);
+            _data->volumeColorTF->AddRGBPoint(150,   1.0, 1.0, 1.0);
+            _data->volumeColorTF->AddRGBPoint(3000,  1.0, 1.0, 1.0);
+
+            _data->volumeOpacityTF->AddPoint(-1350, 0.0);
+            _data->volumeOpacityTF->AddPoint(-1000, 0.0);
+            _data->volumeOpacityTF->AddPoint(-900,  0.01 * s);
+            _data->volumeOpacityTF->AddPoint(-600,  0.05 * s);
+            _data->volumeOpacityTF->AddPoint(-300,  0.15 * s);
+            _data->volumeOpacityTF->AddPoint(0,     0.35 * s);
+            _data->volumeOpacityTF->AddPoint(150,   0.50 * s);
+            _data->volumeOpacityTF->AddPoint(3000,  0.60 * s);
+            break;
+        }
+        case VTKVolumePresetBrain: {
+            // W:80 L:40  → range 0 ~ 80
+            _data->volumeColorTF->AddRGBPoint(-1000, 0.0, 0.0, 0.0);
+            _data->volumeColorTF->AddRGBPoint(0,     0.0, 0.0, 0.0);
+            _data->volumeColorTF->AddRGBPoint(20,    0.30, 0.30, 0.35);
+            _data->volumeColorTF->AddRGBPoint(40,    0.65, 0.60, 0.62);
+            _data->volumeColorTF->AddRGBPoint(60,    0.85, 0.80, 0.78);
+            _data->volumeColorTF->AddRGBPoint(80,    1.0, 0.95, 0.90);
+            _data->volumeColorTF->AddRGBPoint(3000,  1.0, 1.0, 1.0);
+
+            _data->volumeOpacityTF->AddPoint(-1000, 0.0);
+            _data->volumeOpacityTF->AddPoint(0,     0.0);
+            _data->volumeOpacityTF->AddPoint(20,    0.05 * s);
+            _data->volumeOpacityTF->AddPoint(40,    0.25 * s);
+            _data->volumeOpacityTF->AddPoint(60,    0.50 * s);
+            _data->volumeOpacityTF->AddPoint(80,    0.70 * s);
+            _data->volumeOpacityTF->AddPoint(3000,  0.75 * s);
+            break;
+        }
+        case VTKVolumePresetAbdomen: {
+            // W:400 L:50  → range -150 ~ 250
+            _data->volumeColorTF->AddRGBPoint(-1000, 0.0, 0.0, 0.0);
+            _data->volumeColorTF->AddRGBPoint(-150,  0.0, 0.0, 0.0);
+            _data->volumeColorTF->AddRGBPoint(-50,   0.45, 0.25, 0.20);
+            _data->volumeColorTF->AddRGBPoint(50,    0.80, 0.55, 0.40);
+            _data->volumeColorTF->AddRGBPoint(150,   0.90, 0.75, 0.60);
+            _data->volumeColorTF->AddRGBPoint(250,   1.0, 0.90, 0.80);
+            _data->volumeColorTF->AddRGBPoint(3000,  1.0, 1.0, 1.0);
+
+            _data->volumeOpacityTF->AddPoint(-1000, 0.0);
+            _data->volumeOpacityTF->AddPoint(-150,  0.0);
+            _data->volumeOpacityTF->AddPoint(-50,   0.0);
+            _data->volumeOpacityTF->AddPoint(50,    0.15 * s);
+            _data->volumeOpacityTF->AddPoint(150,   0.35 * s);
+            _data->volumeOpacityTF->AddPoint(250,   0.55 * s);
+            _data->volumeOpacityTF->AddPoint(3000,  0.65 * s);
+            break;
+        }
+    }
+
+    // Gradient opacity (edge enhancement — shared across presets)
+    _data->volumeGradientTF->AddPoint(0,   0.0);
+    _data->volumeGradientTF->AddPoint(20,  0.2);
+    _data->volumeGradientTF->AddPoint(100, 1.0);
+
+    if (_data->isVolumeMode) {
+        [self render];
+    }
+}
+
+- (void)setVolumeOpacityScale:(double)scale {
+    if (scale < 0.0) scale = 0.0;
+    if (scale > 2.0) scale = 2.0;
+    _data->volumeOpacityScale = scale;
+    // Re-apply preset with new scale
+    [self applyVolumePreset:_data->volumePreset];
+}
+
+- (VTKVolumePreset)currentVolumePreset {
+    return _data->volumePreset;
+}
+
+- (BOOL)isVolumeLoaded {
+    return _data->isVolumeMode;
+}
+
+// --------------------------------------------------------------------------
 #pragma mark - Rendering
 // --------------------------------------------------------------------------
 - (void)render {
@@ -454,7 +726,7 @@ struct VTKBridgeData {
     }
 #endif
 
-    if (_data->isDICOMMode) {
+    if (_data->isDICOMMode || _data->isVolumeMode) {
         _data->renderer->ResetCamera();
     } else {
         _data->renderer->ResetCameraClippingRange();

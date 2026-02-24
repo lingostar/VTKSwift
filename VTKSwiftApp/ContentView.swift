@@ -5,11 +5,13 @@ import SwiftUI
 enum SidebarItem: Hashable {
     case sphere
     case dicomViewer
+    case volumeViewer
 
     var title: String {
         switch self {
         case .sphere: return "Sphere"
         case .dicomViewer: return "DICOM Viewer"
+        case .volumeViewer: return "3D Volume"
         }
     }
 
@@ -17,6 +19,7 @@ enum SidebarItem: Hashable {
         switch self {
         case .sphere: return "globe"
         case .dicomViewer: return "doc.text.image"
+        case .volumeViewer: return "cube.transparent"
         }
     }
 }
@@ -40,6 +43,12 @@ struct ContentView: View {
                           systemImage: SidebarItem.dicomViewer.icon)
                         .tag(SidebarItem.dicomViewer)
                 }
+
+                Section("Volume Rendering") {
+                    Label(SidebarItem.volumeViewer.title,
+                          systemImage: SidebarItem.volumeViewer.icon)
+                        .tag(SidebarItem.volumeViewer)
+                }
             }
             .navigationTitle("VTKSwift")
         } detail: {
@@ -48,6 +57,8 @@ struct ContentView: View {
                 SphereView()
             case .dicomViewer:
                 DICOMView()
+            case .volumeViewer:
+                VolumeView()
             case nil:
                 Text("Select an item from the sidebar")
                     .foregroundStyle(.secondary)

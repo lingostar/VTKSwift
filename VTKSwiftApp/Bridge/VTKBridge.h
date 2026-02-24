@@ -65,6 +65,36 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) double currentLevel;
 
 // --------------------------------------------------------------------------
+#pragma mark - Volume Rendering
+// --------------------------------------------------------------------------
+
+/// CT preset identifiers for volume rendering.
+typedef NS_ENUM(NSInteger, VTKVolumePreset) {
+    VTKVolumePresetSoftTissue = 0,
+    VTKVolumePresetBone,
+    VTKVolumePresetLung,
+    VTKVolumePresetBrain,
+    VTKVolumePresetAbdomen,
+};
+
+/// Load a DICOM directory and set up 3D volume rendering pipeline.
+/// @param path Absolute path to a directory containing DICOM files.
+/// @return YES if loading succeeded, NO otherwise.
+- (BOOL)loadVolumeFromDICOMDirectory:(NSString *)path;
+
+/// Apply a predefined CT volume preset (changes transfer functions).
+- (void)applyVolumePreset:(VTKVolumePreset)preset;
+
+/// Set volume opacity scale (0.0 ~ 2.0, default 1.0).
+- (void)setVolumeOpacityScale:(double)scale;
+
+/// Current volume preset.
+@property (nonatomic, readonly) VTKVolumePreset currentVolumePreset;
+
+/// Whether volume data is loaded.
+@property (nonatomic, readonly) BOOL isVolumeLoaded;
+
+// --------------------------------------------------------------------------
 #pragma mark - Rendering
 // --------------------------------------------------------------------------
 
