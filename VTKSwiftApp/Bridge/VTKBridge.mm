@@ -46,6 +46,40 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 #include "vtkImageThreshold.h"
 #include "vtkImageResample.h"
 
+// Molecular visualization (macOS only — chemistry libs not built for iOS)
+#if !TARGET_OS_IPHONE
+#include "vtkPDBReader.h"
+#include "vtkMoleculeMapper.h"
+#include "vtkMolecule.h"
+#endif
+
+// Isosurface extraction (for USDZ export)
+#include "vtkMarchingCubes.h"
+#include "vtkSmoothPolyDataFilter.h"
+#include "vtkDecimatePro.h"
+#include "vtkPolyData.h"
+#include "vtkPointData.h"
+#include "vtkCellArray.h"
+#include "vtkCell.h"
+#include "vtkTriangleFilter.h"
+
+// Terrain rendering
+#include "vtkImageDataGeometryFilter.h"
+#include "vtkWarpScalar.h"
+#include "vtkPolyDataNormals.h"
+#include "vtkLookupTable.h"
+#include "vtkLight.h"
+#include "vtkPlaneSource.h"
+// Shadow rendering
+#include "vtkShadowMapPass.h"
+#include "vtkShadowMapBakerPass.h"
+#include "vtkSequencePass.h"
+#include "vtkRenderPassCollection.h"
+#include "vtkCameraPass.h"
+#include "vtkOpaquePass.h"
+#include "vtkLightsPass.h"
+#include <cmath>
+
 #if TARGET_OS_IPHONE
 #include "vtkIOSRenderWindow.h"
 #include "vtkIOSRenderWindowInteractor.h"
@@ -87,6 +121,26 @@ struct VTKBridgeData {
     bool                                             isVolumeMode = false;
     VTKVolumePreset                                  volumePreset = VTKVolumePresetSoftTissue;
     double                                           volumeOpacityScale = 1.0;
+
+    // Terrain rendering pipeline
+    vtkSmartPointer<vtkImageData>                terrainImageData;
+    vtkSmartPointer<vtkImageDataGeometryFilter>  terrainGeomFilter;
+    vtkSmartPointer<vtkWarpScalar>               terrainWarp;
+    vtkSmartPointer<vtkPolyDataNormals>          terrainNormals;
+    vtkSmartPointer<vtkLookupTable>              terrainLUT;
+    vtkSmartPointer<vtkPolyDataMapper>           terrainMapper;
+    vtkSmartPointer<vtkActor>                    terrainActor;
+    vtkSmartPointer<vtkLight>                    sunLight;
+    vtkSmartPointer<vtkActor>                    seaPlaneActor;
+    vtkSmartPointer<vtkShadowMapPass>            shadowPass;
+    vtkSmartPointer<vtkShadowMapBakerPass>       shadowBaker;
+    bool    isTerrainMode = false;
+    bool    shadowsEnabled = true;
+    double  terrainExaggeration = 2.0;
+    double  terrainSunElevation = 45.0;
+    double  terrainSunAzimuth = 180.0;
+    double  terrainMinElev = 0, terrainMaxElev = 1000;
+    VTKTerrainColorScheme terrainColorScheme = VTKTerrainColorSchemeElevation;
 };
 
 // --------------------------------------------------------------------------
@@ -104,7 +158,8 @@ struct VTKBridgeData {
 @implementation VTKContainerView
 - (void)layoutSubviews {
     [super layoutSubviews];
-    if (self.bridge && self.bounds.size.width > 0 && self.bounds.size.height > 0) {
+    // Only resize once the view is in a window (Metal context valid)
+    if (self.window && self.bridge && self.bounds.size.width > 0 && self.bounds.size.height > 0) {
         [self.bridge resizeTo:self.bounds.size];
     }
 }
@@ -120,19 +175,27 @@ struct VTKBridgeData {
 
 - (void)viewDidMoveToWindow {
     [super viewDidMoveToWindow];
-    // Trigger initial render once view is in a window (GL context available)
+    // Trigger initial render once view is in a window (GL context available).
+    // Dispatch to next run-loop tick so AppKit/Metal backing is fully configured;
+    // rendering synchronously here can create the CAMetalLayer with 0×0 drawable.
     if (self.window && self.bridge && !self.didInitialRender) {
         self.didInitialRender = YES;
-        CGSize sz = self.bounds.size;
-        if (sz.width > 0 && sz.height > 0) {
-            [self.bridge resizeTo:sz];
-        }
+        __weak VTKContainerView *weakSelf = self;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            VTKContainerView *strongSelf = weakSelf;
+            if (!strongSelf || !strongSelf.bridge) return;
+            CGSize sz = strongSelf.bounds.size;
+            if (sz.width > 0 && sz.height > 0) {
+                [strongSelf.bridge resizeTo:sz];
+            }
+        });
     }
 }
 
 - (void)layout {
     [super layout];
-    if (self.bridge && self.bounds.size.width > 0 && self.bounds.size.height > 0) {
+    // Only resize once the view is in a window (Metal context valid)
+    if (self.window && self.bridge && self.bounds.size.width > 0 && self.bounds.size.height > 0) {
         [self.bridge resizeTo:self.bounds.size];
     }
 }
@@ -173,6 +236,19 @@ struct VTKBridgeData {
         _data->volumeOpacityTF = nullptr;
         _data->volumeGradientTF = nullptr;
         _data->volumeReader = nullptr;
+
+        // Release terrain resources
+        _data->terrainActor = nullptr;
+        _data->seaPlaneActor = nullptr;
+        _data->terrainMapper = nullptr;
+        _data->terrainNormals = nullptr;
+        _data->terrainWarp = nullptr;
+        _data->terrainGeomFilter = nullptr;
+        _data->terrainLUT = nullptr;
+        _data->terrainImageData = nullptr;
+        _data->sunLight = nullptr;
+        _data->shadowPass = nullptr;
+        _data->shadowBaker = nullptr;
 
         // Release DICOM resources first
         _data->dicomActor = nullptr;
@@ -294,6 +370,64 @@ struct VTKBridgeData {
     cam->Azimuth(30);
     cam->Elevation(20);
     _data->renderer->ResetCameraClippingRange();
+}
+
+// --------------------------------------------------------------------------
+#pragma mark - Molecular Visualization
+// --------------------------------------------------------------------------
+
+- (BOOL)loadPDBFile:(NSString *)filePath {
+#if !TARGET_OS_IPHONE
+    if (!_data->renderer) {
+        NSLog(@"[VTKBridge] Renderer not initialized");
+        return NO;
+    }
+
+    // Clear any existing actors
+    _data->renderer->RemoveAllViewProps();
+
+    // Read PDB file
+    vtkSmartPointer<vtkPDBReader> reader = vtkSmartPointer<vtkPDBReader>::New();
+    reader->SetFileName([filePath UTF8String]);
+    reader->Update();
+
+    // vtkMoleculeReaderBase outputs: port 0 = vtkPolyData, port 1 = vtkMolecule
+    vtkMolecule *molecule = vtkMolecule::SafeDownCast(reader->GetOutputDataObject(1));
+    if (!molecule || molecule->GetNumberOfAtoms() == 0) {
+        NSLog(@"[VTKBridge] PDB file contains no atoms: %@", filePath);
+        return NO;
+    }
+
+    NSLog(@"[VTKBridge] PDB loaded: %lld atoms, %lld bonds from %@",
+          molecule->GetNumberOfAtoms(),
+          molecule->GetNumberOfBonds(),
+          [filePath lastPathComponent]);
+
+    // Create molecule mapper with Ball-and-Stick style
+    vtkSmartPointer<vtkMoleculeMapper> mapper = vtkSmartPointer<vtkMoleculeMapper>::New();
+    mapper->SetInputData(molecule);
+    mapper->UseBallAndStickSettings();
+
+    // Create actor
+    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(mapper);
+
+    // Add to renderer
+    _data->renderer->AddActor(actor);
+
+    // Set up camera
+    _data->renderer->ResetCamera();
+    vtkCamera *cam = _data->renderer->GetActiveCamera();
+    cam->Azimuth(30);
+    cam->Elevation(20);
+    _data->renderer->ResetCameraClippingRange();
+
+    NSLog(@"[VTKBridge] Molecule rendering ready (Ball-and-Stick)");
+    return YES;
+#else
+    NSLog(@"[VTKBridge] Molecular visualization not available on iOS");
+    return NO;
+#endif
 }
 
 // --------------------------------------------------------------------------
@@ -432,6 +566,44 @@ struct VTKBridgeData {
 
 - (double)currentLevel {
     return _data->dicomLevel;
+}
+
+// --------------------------------------------------------------------------
+#pragma mark - Measurement Support
+// --------------------------------------------------------------------------
+
+- (double)pixelSpacingX {
+    if (!_data->dicomReader) return 0.0;
+    vtkImageData *imageData = _data->dicomReader->GetOutput();
+    if (!imageData) return 0.0;
+    double spacing[3];
+    imageData->GetSpacing(spacing);
+    return spacing[0];
+}
+
+- (double)pixelSpacingY {
+    if (!_data->dicomReader) return 0.0;
+    vtkImageData *imageData = _data->dicomReader->GetOutput();
+    if (!imageData) return 0.0;
+    double spacing[3];
+    imageData->GetSpacing(spacing);
+    return spacing[1];
+}
+
+- (NSInteger)imageWidth {
+    if (!_data->dicomReader) return 0;
+    vtkImageData *imageData = _data->dicomReader->GetOutput();
+    if (!imageData) return 0;
+    int *dims = imageData->GetDimensions();
+    return (NSInteger)dims[0];
+}
+
+- (NSInteger)imageHeight {
+    if (!_data->dicomReader) return 0;
+    vtkImageData *imageData = _data->dicomReader->GetOutput();
+    if (!imageData) return 0;
+    int *dims = imageData->GetDimensions();
+    return (NSInteger)dims[1];
 }
 
 // --------------------------------------------------------------------------
@@ -675,12 +847,947 @@ struct VTKBridgeData {
 }
 
 // --------------------------------------------------------------------------
+#pragma mark - Isosurface Export
+// --------------------------------------------------------------------------
+
+/// Private helper: extract isosurface from loaded DICOM data and return processed polydata.
+- (vtkSmartPointer<vtkPolyData>)_extractIsosurfaceWithIsoValue:(double)isoValue
+                                                decimationRate:(double)decimationRate
+                                                     smoothing:(BOOL)smooth {
+    if (!_data->dicomReader) {
+        NSLog(@"[VTKBridge] extractIsosurface: No DICOM data loaded.");
+        return nullptr;
+    }
+
+    vtkImageData *imageData = _data->dicomReader->GetOutput();
+    if (!imageData || imageData->GetNumberOfPoints() == 0) {
+        NSLog(@"[VTKBridge] extractIsosurface: Empty image data.");
+        return nullptr;
+    }
+
+    int *dims = imageData->GetDimensions();
+    NSLog(@"[VTKBridge] Extracting isosurface: isoValue=%.1f, dims=%dx%dx%d",
+          isoValue, dims[0], dims[1], dims[2]);
+
+    // 1. Marching Cubes — isosurface extraction
+    auto mc = vtkSmartPointer<vtkMarchingCubes>::New();
+    mc->SetInputData(imageData);
+    mc->SetValue(0, isoValue);
+    mc->ComputeNormalsOn();
+    mc->Update();
+
+    vtkSmartPointer<vtkPolyData> mesh = mc->GetOutput();
+    if (!mesh || mesh->GetNumberOfPoints() == 0) {
+        NSLog(@"[VTKBridge] MarchingCubes produced no geometry for isoValue=%.1f", isoValue);
+        return nullptr;
+    }
+    NSLog(@"[VTKBridge] MarchingCubes: %lld points, %lld cells",
+          (long long)mesh->GetNumberOfPoints(), (long long)mesh->GetNumberOfCells());
+
+    // 2. Smoothing (optional)
+    if (smooth && mesh->GetNumberOfPoints() > 0) {
+        auto smoother = vtkSmartPointer<vtkSmoothPolyDataFilter>::New();
+        smoother->SetInputData(mesh);
+        smoother->SetNumberOfIterations(20);
+        smoother->SetRelaxationFactor(0.1);
+        smoother->FeatureEdgeSmoothingOff();
+        smoother->BoundarySmoothingOn();
+        smoother->Update();
+        mesh = smoother->GetOutput();
+        NSLog(@"[VTKBridge] After smoothing: %lld points", (long long)mesh->GetNumberOfPoints());
+    }
+
+    // 3. Decimation (optional)
+    if (decimationRate > 0.01 && mesh->GetNumberOfPoints() > 0) {
+        auto decimator = vtkSmartPointer<vtkDecimatePro>::New();
+        decimator->SetInputData(mesh);
+        decimator->SetTargetReduction(decimationRate);
+        decimator->PreserveTopologyOn();
+        decimator->Update();
+        mesh = decimator->GetOutput();
+        NSLog(@"[VTKBridge] After decimation (%.0f%%): %lld points, %lld cells",
+              decimationRate * 100, (long long)mesh->GetNumberOfPoints(), (long long)mesh->GetNumberOfCells());
+    }
+
+    // 4. Ensure all cells are triangles
+    auto triFilter = vtkSmartPointer<vtkTriangleFilter>::New();
+    triFilter->SetInputData(mesh);
+    triFilter->Update();
+    mesh = triFilter->GetOutput();
+
+    if (mesh->GetNumberOfCells() == 0) {
+        NSLog(@"[VTKBridge] No triangles after processing.");
+        return nullptr;
+    }
+
+    return mesh;
+}
+
+- (BOOL)exportIsosurfaceAsSTL:(NSString *)outputPath
+                     isoValue:(double)isoValue
+               decimationRate:(double)decimationRate
+                    smoothing:(BOOL)smooth {
+    vtkSmartPointer<vtkPolyData> mesh = [self _extractIsosurfaceWithIsoValue:isoValue
+                                                             decimationRate:decimationRate
+                                                                  smoothing:smooth];
+    if (!mesh) return NO;
+
+    // 5. Write binary STL manually
+    //    Format: 80-byte header | uint32 numTriangles |
+    //    per triangle: float[3] normal, float[3] v0, float[3] v1, float[3] v2, uint16 attr
+    FILE *fp = fopen([outputPath UTF8String], "wb");
+    if (!fp) {
+        NSLog(@"[VTKBridge] Cannot open file for writing: %@", outputPath);
+        return NO;
+    }
+
+    // Header (80 bytes)
+    char header[80] = {0};
+    snprintf(header, 80, "VTKSwift DICOM isosurface isoValue=%.1f", isoValue);
+    fwrite(header, 1, 80, fp);
+
+    // Count triangles
+    vtkIdType numCells = mesh->GetNumberOfCells();
+    uint32_t numTriangles = (uint32_t)numCells;
+    fwrite(&numTriangles, sizeof(uint32_t), 1, fp);
+
+    // Get normals if available
+    vtkDataArray *normals = mesh->GetPointData()->GetNormals();
+
+    // Write each triangle
+    for (vtkIdType i = 0; i < numCells; i++) {
+        vtkCell *cell = mesh->GetCell(i);
+        if (cell->GetNumberOfPoints() != 3) continue;
+
+        vtkIdType id0 = cell->GetPointId(0);
+        vtkIdType id1 = cell->GetPointId(1);
+        vtkIdType id2 = cell->GetPointId(2);
+
+        double p0[3], p1[3], p2[3];
+        mesh->GetPoint(id0, p0);
+        mesh->GetPoint(id1, p1);
+        mesh->GetPoint(id2, p2);
+
+        // Face normal (average of vertex normals or zero)
+        float normal[3] = {0, 0, 0};
+        if (normals) {
+            double n0[3], n1[3], n2[3];
+            normals->GetTuple(id0, n0);
+            normals->GetTuple(id1, n1);
+            normals->GetTuple(id2, n2);
+            normal[0] = (float)((n0[0] + n1[0] + n2[0]) / 3.0);
+            normal[1] = (float)((n0[1] + n1[1] + n2[1]) / 3.0);
+            normal[2] = (float)((n0[2] + n1[2] + n2[2]) / 3.0);
+        }
+
+        fwrite(normal, sizeof(float), 3, fp);
+
+        float v0[3] = {(float)p0[0], (float)p0[1], (float)p0[2]};
+        float v1[3] = {(float)p1[0], (float)p1[1], (float)p1[2]};
+        float v2[3] = {(float)p2[0], (float)p2[1], (float)p2[2]};
+        fwrite(v0, sizeof(float), 3, fp);
+        fwrite(v1, sizeof(float), 3, fp);
+        fwrite(v2, sizeof(float), 3, fp);
+
+        uint16_t attrByteCount = 0;
+        fwrite(&attrByteCount, sizeof(uint16_t), 1, fp);
+    }
+
+    fclose(fp);
+
+    NSLog(@"[VTKBridge] STL exported: %u triangles to %@", numTriangles, outputPath);
+    return YES;
+}
+
+- (BOOL)exportIsosurfaceAsOBJ:(NSString *)outputPath
+                     isoValue:(double)isoValue
+               decimationRate:(double)decimationRate
+                    smoothing:(BOOL)smooth {
+    vtkSmartPointer<vtkPolyData> mesh = [self _extractIsosurfaceWithIsoValue:isoValue
+                                                             decimationRate:decimationRate
+                                                                  smoothing:smooth];
+    if (!mesh) return NO;
+
+    // Derive .mtl path from .obj path
+    NSString *basePath = [outputPath stringByDeletingPathExtension];
+    NSString *mtlPath = [basePath stringByAppendingPathExtension:@"mtl"];
+    NSString *mtlFilename = [mtlPath lastPathComponent];
+    NSString *objName = [[outputPath lastPathComponent] stringByDeletingPathExtension];
+
+    // --- Write MTL file ---
+    FILE *mtlFp = fopen([mtlPath UTF8String], "w");
+    if (!mtlFp) {
+        NSLog(@"[VTKBridge] Cannot open MTL file for writing: %@", mtlPath);
+        return NO;
+    }
+    fprintf(mtlFp, "# VTKSwift Material\n");
+    fprintf(mtlFp, "# Generated from DICOM isosurface (isoValue=%.1f)\n\n", isoValue);
+    fprintf(mtlFp, "newmtl isosurface\n");
+    fprintf(mtlFp, "Ka 0.2 0.2 0.2\n");      // ambient
+    fprintf(mtlFp, "Kd 0.878 0.839 0.784\n"); // diffuse (bone-like ivory)
+    fprintf(mtlFp, "Ks 0.3 0.3 0.3\n");       // specular
+    fprintf(mtlFp, "Ns 80.0\n");              // shininess
+    fprintf(mtlFp, "d 1.0\n");                // opacity
+    fprintf(mtlFp, "illum 2\n");              // diffuse + specular
+    fclose(mtlFp);
+
+    // --- Write OBJ file ---
+    FILE *fp = fopen([outputPath UTF8String], "w");
+    if (!fp) {
+        NSLog(@"[VTKBridge] Cannot open OBJ file for writing: %@", outputPath);
+        return NO;
+    }
+
+    fprintf(fp, "# VTKSwift OBJ Export\n");
+    fprintf(fp, "# DICOM isosurface isoValue=%.1f\n", isoValue);
+    fprintf(fp, "# Reference only — not for clinical diagnosis\n\n");
+    fprintf(fp, "mtllib %s\n", [mtlFilename UTF8String]);
+    fprintf(fp, "o %s\n\n", [objName UTF8String]);
+
+    vtkIdType numPoints = mesh->GetNumberOfPoints();
+    vtkIdType numCells = mesh->GetNumberOfCells();
+
+    // Vertices
+    for (vtkIdType i = 0; i < numPoints; i++) {
+        double p[3];
+        mesh->GetPoint(i, p);
+        fprintf(fp, "v %.6f %.6f %.6f\n", p[0], p[1], p[2]);
+    }
+    fprintf(fp, "\n");
+
+    // Normals
+    vtkDataArray *normals = mesh->GetPointData()->GetNormals();
+    if (normals) {
+        for (vtkIdType i = 0; i < numPoints; i++) {
+            double n[3];
+            normals->GetTuple(i, n);
+            fprintf(fp, "vn %.6f %.6f %.6f\n", n[0], n[1], n[2]);
+        }
+        fprintf(fp, "\n");
+    }
+
+    // Faces (1-indexed)
+    fprintf(fp, "usemtl isosurface\n");
+    for (vtkIdType i = 0; i < numCells; i++) {
+        vtkCell *cell = mesh->GetCell(i);
+        if (cell->GetNumberOfPoints() != 3) continue;
+
+        vtkIdType i0 = cell->GetPointId(0) + 1;  // OBJ is 1-indexed
+        vtkIdType i1 = cell->GetPointId(1) + 1;
+        vtkIdType i2 = cell->GetPointId(2) + 1;
+
+        if (normals) {
+            fprintf(fp, "f %lld//%lld %lld//%lld %lld//%lld\n",
+                    (long long)i0, (long long)i0,
+                    (long long)i1, (long long)i1,
+                    (long long)i2, (long long)i2);
+        } else {
+            fprintf(fp, "f %lld %lld %lld\n",
+                    (long long)i0, (long long)i1, (long long)i2);
+        }
+    }
+
+    fclose(fp);
+
+    NSLog(@"[VTKBridge] OBJ exported: %lld vertices, %lld faces to %@",
+          (long long)numPoints, (long long)numCells, outputPath);
+    return YES;
+}
+
+- (BOOL)extractIsosurfaceMeshWithIsoValue:(double)isoValue
+                           decimationRate:(double)decimationRate
+                                smoothing:(BOOL)smooth
+                                 vertices:(NSData * _Nullable * _Nonnull)verticesOut
+                                  normals:(NSData * _Nullable * _Nonnull)normalsOut
+                                    faces:(NSData * _Nullable * _Nonnull)facesOut {
+    vtkSmartPointer<vtkPolyData> mesh = [self _extractIsosurfaceWithIsoValue:isoValue
+                                                             decimationRate:decimationRate
+                                                                  smoothing:smooth];
+    if (!mesh) return NO;
+
+    vtkIdType numPoints = mesh->GetNumberOfPoints();
+    vtkIdType numCells = mesh->GetNumberOfCells();
+
+    // Pack vertices as float32 [x,y,z, x,y,z, ...]
+    NSMutableData *vData = [NSMutableData dataWithLength:numPoints * 3 * sizeof(float)];
+    float *vPtr = (float *)[vData mutableBytes];
+    for (vtkIdType i = 0; i < numPoints; i++) {
+        double p[3];
+        mesh->GetPoint(i, p);
+        vPtr[i * 3 + 0] = (float)p[0];
+        vPtr[i * 3 + 1] = (float)p[1];
+        vPtr[i * 3 + 2] = (float)p[2];
+    }
+
+    // Pack normals as float32 [nx,ny,nz, ...]
+    NSMutableData *nData = [NSMutableData dataWithLength:numPoints * 3 * sizeof(float)];
+    float *nPtr = (float *)[nData mutableBytes];
+    vtkDataArray *meshNormals = mesh->GetPointData()->GetNormals();
+    if (meshNormals) {
+        for (vtkIdType i = 0; i < numPoints; i++) {
+            double n[3];
+            meshNormals->GetTuple(i, n);
+            nPtr[i * 3 + 0] = (float)n[0];
+            nPtr[i * 3 + 1] = (float)n[1];
+            nPtr[i * 3 + 2] = (float)n[2];
+        }
+    }
+
+    // Pack face indices as uint32 [i0,i1,i2, ...]
+    NSMutableData *fData = [NSMutableData dataWithLength:numCells * 3 * sizeof(uint32_t)];
+    uint32_t *fPtr = (uint32_t *)[fData mutableBytes];
+    vtkIdType fIdx = 0;
+    for (vtkIdType i = 0; i < numCells; i++) {
+        vtkCell *cell = mesh->GetCell(i);
+        if (cell->GetNumberOfPoints() != 3) continue;
+        fPtr[fIdx * 3 + 0] = (uint32_t)cell->GetPointId(0);
+        fPtr[fIdx * 3 + 1] = (uint32_t)cell->GetPointId(1);
+        fPtr[fIdx * 3 + 2] = (uint32_t)cell->GetPointId(2);
+        fIdx++;
+    }
+    // Trim if some cells were skipped
+    if (fIdx < numCells) {
+        [fData setLength:fIdx * 3 * sizeof(uint32_t)];
+    }
+
+    *verticesOut = [vData copy];
+    *normalsOut = [nData copy];
+    *facesOut = [fData copy];
+
+    NSLog(@"[VTKBridge] Mesh extracted: %lld vertices, %lld faces",
+          (long long)numPoints, (long long)fIdx);
+    return YES;
+}
+
+- (BOOL)exportMultiIsosurfaceAsOBJ:(NSString *)outputPath
+                         isoValues:(NSArray<NSNumber *> *)isoValues
+                             names:(NSArray<NSString *> *)names
+                    decimationRate:(double)decimationRate
+                         smoothing:(BOOL)smooth {
+    if (!isoValues || isoValues.count == 0) return NO;
+    if (names.count != isoValues.count) return NO;
+
+    // Predefined colors for each tissue layer (up to 5)
+    static const double colors[][3] = {
+        {0.878, 0.839, 0.784},  // Bone — ivory
+        {0.827, 0.522, 0.475},  // Soft Tissue — pink
+        {0.925, 0.839, 0.745},  // Skin — peach
+        {0.600, 0.200, 0.200},  // Muscle — dark red
+        {0.700, 0.700, 0.700},  // Other — gray
+    };
+    static const int numColors = 5;
+
+    NSString *basePath = [outputPath stringByDeletingPathExtension];
+    NSString *mtlPath = [basePath stringByAppendingPathExtension:@"mtl"];
+    NSString *mtlFilename = [mtlPath lastPathComponent];
+
+    // --- Write MTL ---
+    FILE *mtlFp = fopen([mtlPath UTF8String], "w");
+    if (!mtlFp) return NO;
+    fprintf(mtlFp, "# VTKSwift Multi-Isosurface Material\n\n");
+    for (NSUInteger i = 0; i < names.count; i++) {
+        int ci = (int)(i % numColors);
+        fprintf(mtlFp, "newmtl %s\n", [names[i] UTF8String]);
+        fprintf(mtlFp, "Ka 0.2 0.2 0.2\n");
+        fprintf(mtlFp, "Kd %.3f %.3f %.3f\n", colors[ci][0], colors[ci][1], colors[ci][2]);
+        fprintf(mtlFp, "Ks 0.3 0.3 0.3\n");
+        fprintf(mtlFp, "Ns 80.0\n");
+        fprintf(mtlFp, "d %.1f\n", (i == 0) ? 1.0 : 0.6);  // lower layers semi-transparent
+        fprintf(mtlFp, "illum 2\n\n");
+    }
+    fclose(mtlFp);
+
+    // --- Write OBJ ---
+    FILE *fp = fopen([outputPath UTF8String], "w");
+    if (!fp) return NO;
+
+    fprintf(fp, "# VTKSwift Multi-Isosurface OBJ Export\n");
+    fprintf(fp, "# Reference only — not for clinical diagnosis\n\n");
+    fprintf(fp, "mtllib %s\n\n", [mtlFilename UTF8String]);
+
+    vtkIdType vertexOffset = 0;  // OBJ vertex indices are global, 1-based
+
+    for (NSUInteger layer = 0; layer < isoValues.count; layer++) {
+        double isoValue = [isoValues[layer] doubleValue];
+        NSString *name = names[layer];
+
+        vtkSmartPointer<vtkPolyData> mesh = [self _extractIsosurfaceWithIsoValue:isoValue
+                                                                 decimationRate:decimationRate
+                                                                      smoothing:smooth];
+        if (!mesh) {
+            NSLog(@"[VTKBridge] Multi-ISO: skipping layer %@ (isoValue=%.1f) — no geometry", name, isoValue);
+            continue;
+        }
+
+        vtkIdType numPoints = mesh->GetNumberOfPoints();
+        vtkIdType numCells = mesh->GetNumberOfCells();
+
+        fprintf(fp, "g %s\n", [name UTF8String]);
+        fprintf(fp, "usemtl %s\n", [name UTF8String]);
+
+        // Vertices
+        for (vtkIdType i = 0; i < numPoints; i++) {
+            double p[3];
+            mesh->GetPoint(i, p);
+            fprintf(fp, "v %.6f %.6f %.6f\n", p[0], p[1], p[2]);
+        }
+
+        // Normals
+        vtkDataArray *normals = mesh->GetPointData()->GetNormals();
+        if (normals) {
+            for (vtkIdType i = 0; i < numPoints; i++) {
+                double n[3];
+                normals->GetTuple(i, n);
+                fprintf(fp, "vn %.6f %.6f %.6f\n", n[0], n[1], n[2]);
+            }
+        }
+
+        // Faces (offset by total vertices from previous layers)
+        for (vtkIdType i = 0; i < numCells; i++) {
+            vtkCell *cell = mesh->GetCell(i);
+            if (cell->GetNumberOfPoints() != 3) continue;
+
+            long long i0 = cell->GetPointId(0) + vertexOffset + 1;
+            long long i1 = cell->GetPointId(1) + vertexOffset + 1;
+            long long i2 = cell->GetPointId(2) + vertexOffset + 1;
+
+            if (normals) {
+                fprintf(fp, "f %lld//%lld %lld//%lld %lld//%lld\n", i0, i0, i1, i1, i2, i2);
+            } else {
+                fprintf(fp, "f %lld %lld %lld\n", i0, i1, i2);
+            }
+        }
+
+        vertexOffset += numPoints;
+        fprintf(fp, "\n");
+        NSLog(@"[VTKBridge] Multi-ISO layer '%@' (%.0f HU): %lld verts, %lld faces",
+              name, isoValue, (long long)numPoints, (long long)numCells);
+    }
+
+    fclose(fp);
+    NSLog(@"[VTKBridge] Multi-isosurface OBJ exported to %@", outputPath);
+    return YES;
+}
+
+// --------------------------------------------------------------------------
+#pragma mark - Terrain Viewer (Urban Sunlight Simulator)
+// --------------------------------------------------------------------------
+
+- (BOOL)loadTerrainFromRawDEM:(NSString *)path
+                        width:(NSInteger)width
+                       height:(NSInteger)height
+                     spacingX:(double)spacingX
+                     spacingY:(double)spacingY {
+    if (!path || path.length == 0) return NO;
+
+    // Read raw 16-bit signed LE heightfield
+    FILE *fp = fopen([path UTF8String], "rb");
+    if (!fp) {
+        NSLog(@"[VTKBridge] Cannot open DEM file: %@", path);
+        return NO;
+    }
+
+    NSInteger totalPixels = width * height;
+    int16_t *rawData = new int16_t[totalPixels];
+    size_t bytesRead = fread(rawData, sizeof(int16_t), totalPixels, fp);
+    fclose(fp);
+
+    if ((NSInteger)bytesRead != totalPixels) {
+        NSLog(@"[VTKBridge] DEM read error: expected %ld pixels, got %zu",
+              (long)totalPixels, bytesRead);
+        delete[] rawData;
+        return NO;
+    }
+
+    // Find elevation range
+    double minElev = 1e9, maxElev = -1e9;
+    for (NSInteger i = 0; i < totalPixels; i++) {
+        double v = (double)rawData[i];
+        if (v < minElev) minElev = v;
+        if (v > maxElev) maxElev = v;
+    }
+    _data->terrainMinElev = minElev;
+    _data->terrainMaxElev = maxElev;
+
+    NSLog(@"[VTKBridge] DEM loaded: %ldx%ld, elevation %.0f–%.0fm, spacing %.1fx%.1fm",
+          (long)width, (long)height, minElev, maxElev, spacingX, spacingY);
+
+    // Create vtkImageData
+    _data->terrainImageData = vtkSmartPointer<vtkImageData>::New();
+    _data->terrainImageData->SetDimensions((int)width, (int)height, 1);
+    _data->terrainImageData->SetSpacing(spacingX, spacingY, 1.0);
+    _data->terrainImageData->SetOrigin(0, 0, 0);
+    _data->terrainImageData->AllocateScalars(VTK_FLOAT, 1);
+
+    // Copy data (flip Y so north is up in VTK coordinate system)
+    float *scalars = static_cast<float *>(
+        _data->terrainImageData->GetScalarPointer());
+    for (NSInteger row = 0; row < height; row++) {
+        for (NSInteger col = 0; col < width; col++) {
+            NSInteger srcIdx = row * width + col;
+            NSInteger dstIdx = (height - 1 - row) * width + col;
+            scalars[dstIdx] = (float)rawData[srcIdx];
+        }
+    }
+
+    delete[] rawData;
+
+    [self buildTerrainPipeline];
+    return YES;
+}
+
+- (BOOL)loadSyntheticTerrain:(NSInteger)gridSize {
+    if (gridSize < 32) gridSize = 32;
+    if (gridSize > 1024) gridSize = 1024;
+
+    double spacing = 30.0;  // ~30m like SRTM
+
+    _data->terrainImageData = vtkSmartPointer<vtkImageData>::New();
+    _data->terrainImageData->SetDimensions((int)gridSize, (int)gridSize, 1);
+    _data->terrainImageData->SetSpacing(spacing, spacing, 1.0);
+    _data->terrainImageData->SetOrigin(0, 0, 0);
+    _data->terrainImageData->AllocateScalars(VTK_FLOAT, 1);
+
+    float *scalars = static_cast<float *>(
+        _data->terrainImageData->GetScalarPointer());
+    double center = gridSize * spacing * 0.5;
+    _data->terrainMinElev = 1e9;
+    _data->terrainMaxElev = -1e9;
+
+    for (NSInteger j = 0; j < gridSize; j++) {
+        for (NSInteger i = 0; i < gridSize; i++) {
+            double x = i * spacing;
+            double y = j * spacing;
+            double dx = (x - center) / (center * 0.6);
+            double dy = (y - center) / (center * 0.6);
+            // Mountain + ridge + noise
+            double elev = 300.0 * exp(-(dx * dx + dy * dy)) +
+                          100.0 * sin(dx * 3.0) * cos(dy * 2.5) +
+                          50.0 * sin(dx * 7.0 + dy * 5.0) * 0.5 -
+                          20.0;
+            if (elev < -20) elev = -20;
+            scalars[j * gridSize + i] = (float)elev;
+            if (elev < _data->terrainMinElev) _data->terrainMinElev = elev;
+            if (elev > _data->terrainMaxElev) _data->terrainMaxElev = elev;
+        }
+    }
+
+    NSLog(@"[VTKBridge] Synthetic terrain: %ldx%ld, elevation %.0f–%.0fm",
+          (long)gridSize, (long)gridSize,
+          _data->terrainMinElev, _data->terrainMaxElev);
+
+    [self buildTerrainPipeline];
+    return YES;
+}
+
+- (void)buildTerrainPipeline {
+    // Clear previous scene
+    _data->renderer->RemoveAllViewProps();
+    if (_data->sunLight) {
+        _data->renderer->RemoveLight(_data->sunLight);
+        _data->sunLight = nullptr;
+    }
+    _data->renderer->RemoveAllLights();
+
+    // 1. ImageData → PolyData (flat 2D grid)
+    _data->terrainGeomFilter =
+        vtkSmartPointer<vtkImageDataGeometryFilter>::New();
+    _data->terrainGeomFilter->SetInputData(_data->terrainImageData);
+
+    // 2. Warp Z by elevation
+    _data->terrainWarp = vtkSmartPointer<vtkWarpScalar>::New();
+    _data->terrainWarp->SetInputConnection(
+        _data->terrainGeomFilter->GetOutputPort());
+    _data->terrainWarp->SetScaleFactor(_data->terrainExaggeration);
+    _data->terrainWarp->UseNormalOn();
+    _data->terrainWarp->SetNormal(0, 0, 1);
+
+    // 3. Compute smooth normals
+    _data->terrainNormals = vtkSmartPointer<vtkPolyDataNormals>::New();
+    _data->terrainNormals->SetInputConnection(
+        _data->terrainWarp->GetOutputPort());
+    _data->terrainNormals->SetFeatureAngle(60.0);
+    _data->terrainNormals->ComputePointNormalsOn();
+    _data->terrainNormals->SplittingOff();
+    _data->terrainNormals->Update();
+
+    // 4. Color by elevation
+    [self buildTerrainLUT];
+
+    // 5. Mapper
+    _data->terrainMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    _data->terrainMapper->SetInputConnection(
+        _data->terrainNormals->GetOutputPort());
+    _data->terrainMapper->SetLookupTable(_data->terrainLUT);
+    _data->terrainMapper->SetScalarRange(
+        _data->terrainMinElev, _data->terrainMaxElev);
+    _data->terrainMapper->ScalarVisibilityOn();
+
+    // 6. Actor
+    _data->terrainActor = vtkSmartPointer<vtkActor>::New();
+    _data->terrainActor->SetMapper(_data->terrainMapper);
+    _data->terrainActor->GetProperty()->SetAmbient(0.15);
+    _data->terrainActor->GetProperty()->SetDiffuse(0.85);
+    _data->terrainActor->GetProperty()->SetSpecular(0.05);
+    _data->terrainActor->GetProperty()->SetSpecularPower(5.0);
+    _data->renderer->AddActor(_data->terrainActor);
+
+    // 7. Sea plane at z=0
+    [self addSeaPlane];
+
+    // 8. Lighting — sun (positional for shadow map compatibility)
+    _data->sunLight = vtkSmartPointer<vtkLight>::New();
+    _data->sunLight->SetLightTypeToSceneLight();
+    _data->sunLight->SetPositional(true);
+    _data->sunLight->SetConeAngle(120.0);
+    _data->sunLight->SetColor(1.0, 0.95, 0.85);
+    _data->sunLight->SetIntensity(1.0);
+    [self updateSunDirection];
+    _data->renderer->AddLight(_data->sunLight);
+
+    // Ambient fill light (sky)
+    vtkSmartPointer<vtkLight> ambientLight =
+        vtkSmartPointer<vtkLight>::New();
+    ambientLight->SetLightTypeToSceneLight();
+    ambientLight->SetPositional(false);
+    ambientLight->SetColor(0.6, 0.7, 0.9);
+    ambientLight->SetIntensity(0.3);
+    ambientLight->SetPosition(0, 0, 1);
+    ambientLight->SetFocalPoint(0, 0, 0);
+    _data->renderer->AddLight(ambientLight);
+
+    // 9. Shadow map passes
+    if (_data->shadowsEnabled) {
+        [self setupShadowPasses];
+    }
+
+    // 10. Sky background
+    _data->renderer->SetBackground(0.45, 0.55, 0.70);
+    _data->renderer->SetBackground2(0.15, 0.25, 0.50);
+    _data->renderer->SetGradientBackground(true);
+
+    // 11. Camera setup
+    _data->renderer->ResetCamera();
+    vtkCamera *cam = _data->renderer->GetActiveCamera();
+    cam->Elevation(-30);
+    cam->Azimuth(20);
+    _data->renderer->ResetCameraClippingRange();
+
+    // Trackball interaction
+    vtkSmartPointer<vtkInteractorStyleTrackballCamera> style =
+        vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
+    _data->interactor->SetInteractorStyle(style);
+
+    _data->isTerrainMode = true;
+    NSLog(@"[VTKBridge] Terrain pipeline ready");
+}
+
+- (void)buildTerrainLUT {
+    _data->terrainLUT = vtkSmartPointer<vtkLookupTable>::New();
+    _data->terrainLUT->SetNumberOfTableValues(256);
+
+    double minE = _data->terrainMinElev;
+    double maxE = _data->terrainMaxElev;
+    double range = maxE - minE;
+    if (range < 1.0) range = 1.0;
+
+    _data->terrainLUT->SetTableRange(minE, maxE);
+
+    switch (_data->terrainColorScheme) {
+        case VTKTerrainColorSchemeElevation: {
+            _data->terrainLUT->Build();
+            for (int i = 0; i < 256; i++) {
+                double t = (double)i / 255.0;
+                double r, g, b;
+                if (t < 0.05) {
+                    // Below sea level: deep blue
+                    r = 0.1; g = 0.2; b = 0.6;
+                } else if (t < 0.15) {
+                    // Coast: sandy
+                    double s = (t - 0.05) / 0.10;
+                    r = 0.1 + s * 0.6;
+                    g = 0.2 + s * 0.5;
+                    b = 0.6 - s * 0.4;
+                } else if (t < 0.35) {
+                    // Lowland: green
+                    double s = (t - 0.15) / 0.20;
+                    r = 0.25 + s * 0.15;
+                    g = 0.55 + s * 0.05;
+                    b = 0.15 + s * 0.05;
+                } else if (t < 0.60) {
+                    // Mid-elevation: green to brown
+                    double s = (t - 0.35) / 0.25;
+                    r = 0.40 + s * 0.25;
+                    g = 0.60 - s * 0.20;
+                    b = 0.20 - s * 0.05;
+                } else if (t < 0.85) {
+                    // Highland: brown to gray
+                    double s = (t - 0.60) / 0.25;
+                    r = 0.65 + s * 0.10;
+                    g = 0.40 + s * 0.15;
+                    b = 0.15 + s * 0.20;
+                } else {
+                    // Peak: gray to white
+                    double s = (t - 0.85) / 0.15;
+                    r = 0.75 + s * 0.25;
+                    g = 0.55 + s * 0.45;
+                    b = 0.35 + s * 0.65;
+                }
+                _data->terrainLUT->SetTableValue(i, r, g, b, 1.0);
+            }
+            break;
+        }
+        case VTKTerrainColorSchemeSatellite: {
+            _data->terrainLUT->Build();
+            for (int i = 0; i < 256; i++) {
+                double t = (double)i / 255.0;
+                double r, g, b;
+                if (t < 0.05) {
+                    r = 0.15; g = 0.25; b = 0.45;
+                } else if (t < 0.20) {
+                    double s = (t - 0.05) / 0.15;
+                    r = 0.35 + s * 0.15;
+                    g = 0.40 + s * 0.15;
+                    b = 0.25 - s * 0.05;
+                } else if (t < 0.50) {
+                    double s = (t - 0.20) / 0.30;
+                    r = 0.50 + s * 0.10;
+                    g = 0.55 - s * 0.10;
+                    b = 0.20 + s * 0.05;
+                } else {
+                    double s = (t - 0.50) / 0.50;
+                    r = 0.60 + s * 0.15;
+                    g = 0.45 + s * 0.10;
+                    b = 0.25 + s * 0.15;
+                }
+                _data->terrainLUT->SetTableValue(i, r, g, b, 1.0);
+            }
+            break;
+        }
+        case VTKTerrainColorSchemeGrayscale: {
+            _data->terrainLUT->Build();
+            for (int i = 0; i < 256; i++) {
+                double t = (double)i / 255.0;
+                double v;
+                if (t < 0.05) {
+                    v = 0.3;
+                } else {
+                    v = 0.5 + (t - 0.05) * 0.45;
+                }
+                _data->terrainLUT->SetTableValue(i, v, v, v, 1.0);
+            }
+            break;
+        }
+    }
+}
+
+- (void)addSeaPlane {
+    // Get terrain bounds for plane sizing
+    _data->terrainGeomFilter->Update();
+    _data->terrainWarp->Update();
+    double bounds[6];
+    _data->terrainWarp->GetOutput()->GetBounds(bounds);
+    double margin = 500.0;
+
+    vtkSmartPointer<vtkPlaneSource> plane =
+        vtkSmartPointer<vtkPlaneSource>::New();
+    plane->SetOrigin(bounds[0] - margin, bounds[2] - margin, 0);
+    plane->SetPoint1(bounds[1] + margin, bounds[2] - margin, 0);
+    plane->SetPoint2(bounds[0] - margin, bounds[3] + margin, 0);
+    plane->SetResolution(1, 1);
+    plane->Update();
+
+    vtkSmartPointer<vtkPolyDataMapper> planeMapper =
+        vtkSmartPointer<vtkPolyDataMapper>::New();
+    planeMapper->SetInputConnection(plane->GetOutputPort());
+
+    _data->seaPlaneActor = vtkSmartPointer<vtkActor>::New();
+    _data->seaPlaneActor->SetMapper(planeMapper);
+    _data->seaPlaneActor->GetProperty()->SetColor(0.2, 0.4, 0.7);
+    _data->seaPlaneActor->GetProperty()->SetOpacity(0.6);
+    _data->seaPlaneActor->GetProperty()->SetAmbient(0.4);
+    _data->seaPlaneActor->GetProperty()->SetDiffuse(0.6);
+    _data->renderer->AddActor(_data->seaPlaneActor);
+}
+
+- (void)setupShadowPasses {
+    // Create render passes for shadow mapping
+    vtkSmartPointer<vtkOpaquePass> opaquePass =
+        vtkSmartPointer<vtkOpaquePass>::New();
+    vtkSmartPointer<vtkLightsPass> lightsPass =
+        vtkSmartPointer<vtkLightsPass>::New();
+
+    // Sequence: lights → opaque geometry
+    vtkSmartPointer<vtkRenderPassCollection> passes =
+        vtkSmartPointer<vtkRenderPassCollection>::New();
+    passes->AddItem(lightsPass);
+    passes->AddItem(opaquePass);
+
+    vtkSmartPointer<vtkSequencePass> seqPass =
+        vtkSmartPointer<vtkSequencePass>::New();
+    seqPass->SetPasses(passes);
+
+    // Shadow map baker (renders depth from light's POV)
+    _data->shadowBaker = vtkSmartPointer<vtkShadowMapBakerPass>::New();
+    _data->shadowBaker->SetResolution(2048);
+    _data->shadowBaker->SetOpaqueSequence(seqPass);
+
+    // Shadow map pass (uses baked depth to compute shadows)
+    _data->shadowPass = vtkSmartPointer<vtkShadowMapPass>::New();
+    _data->shadowPass->SetShadowMapBakerPass(_data->shadowBaker);
+    _data->shadowPass->SetOpaqueSequence(seqPass);
+
+    // Top-level camera pass
+    vtkSmartPointer<vtkRenderPassCollection> topPasses =
+        vtkSmartPointer<vtkRenderPassCollection>::New();
+    topPasses->AddItem(_data->shadowBaker);
+    topPasses->AddItem(_data->shadowPass);
+
+    vtkSmartPointer<vtkSequencePass> topSeq =
+        vtkSmartPointer<vtkSequencePass>::New();
+    topSeq->SetPasses(topPasses);
+
+    vtkSmartPointer<vtkCameraPass> cameraPass =
+        vtkSmartPointer<vtkCameraPass>::New();
+    cameraPass->SetDelegatePass(topSeq);
+
+    _data->renderer->SetPass(cameraPass);
+
+    NSLog(@"[VTKBridge] Shadow map passes configured (2048x2048)");
+}
+
+- (void)updateSunDirection {
+    if (!_data->sunLight) return;
+
+    // Convert elevation/azimuth to direction vector
+    double elevRad = _data->terrainSunElevation * M_PI / 180.0;
+    double azRad = _data->terrainSunAzimuth * M_PI / 180.0;
+
+    // Azimuth: 0=North(+Y), 90=East(+X), 180=South(-Y), 270=West(-X)
+    double dx = cos(elevRad) * sin(azRad);
+    double dy = cos(elevRad) * cos(azRad);
+    double dz = sin(elevRad);
+
+    // VTK light: SetPosition sets where light comes from
+    double dist = 50000.0;
+    _data->sunLight->SetPosition(dx * dist, dy * dist, dz * dist);
+    _data->sunLight->SetFocalPoint(0, 0, 0);
+
+    // Warm light at low sun angles (golden hour effect)
+    double warmth = 1.0;
+    if (_data->terrainSunElevation < 15.0) {
+        warmth = _data->terrainSunElevation / 15.0;
+        if (warmth < 0.0) warmth = 0.0;
+    }
+    double r = 1.0;
+    double g = 0.80 + warmth * 0.15;
+    double b = 0.60 + warmth * 0.25;
+    _data->sunLight->SetColor(r, g, b);
+
+    // Dim light at low sun angles
+    double intensity = 0.3 + 0.7 * sin(elevRad);
+    if (intensity < 0.3) intensity = 0.3;
+    _data->sunLight->SetIntensity(intensity);
+}
+
+- (void)setSunElevation:(double)elevation azimuth:(double)azimuth {
+    if (!_data->isTerrainMode) return;
+
+    if (elevation < 0) elevation = 0;
+    if (elevation > 90) elevation = 90;
+    while (azimuth < 0) azimuth += 360;
+    while (azimuth >= 360) azimuth -= 360;
+
+    _data->terrainSunElevation = elevation;
+    _data->terrainSunAzimuth = azimuth;
+
+    [self updateSunDirection];
+    [self render];
+}
+
+- (void)setElevationExaggeration:(double)factor {
+    if (!_data->isTerrainMode || !_data->terrainWarp) return;
+
+    if (factor < 0.5) factor = 0.5;
+    if (factor > 10.0) factor = 10.0;
+
+    _data->terrainExaggeration = factor;
+    _data->terrainWarp->SetScaleFactor(factor);
+    _data->terrainWarp->Update();
+    _data->terrainNormals->Update();
+
+    _data->renderer->ResetCameraClippingRange();
+    [self render];
+}
+
+- (void)setShadowsEnabled:(BOOL)enabled {
+    if (!_data->isTerrainMode) return;
+
+    _data->shadowsEnabled = (bool)enabled;
+
+    if (enabled) {
+        [self setupShadowPasses];
+    } else {
+        // Remove render passes (revert to default rendering)
+        _data->renderer->SetPass(nullptr);
+        _data->shadowPass = nullptr;
+        _data->shadowBaker = nullptr;
+    }
+
+    [self render];
+}
+
+- (void)applyTerrainColorScheme:(VTKTerrainColorScheme)scheme {
+    if (!_data->isTerrainMode) return;
+
+    _data->terrainColorScheme = scheme;
+    [self buildTerrainLUT];
+
+    if (_data->terrainMapper) {
+        _data->terrainMapper->SetLookupTable(_data->terrainLUT);
+        _data->terrainMapper->SetScalarRange(
+            _data->terrainMinElev, _data->terrainMaxElev);
+    }
+
+    [self render];
+}
+
+// Terrain property getters
+- (BOOL)isTerrainLoaded {
+    return _data->isTerrainMode;
+}
+
+- (double)terrainElevationExaggeration {
+    return _data->terrainExaggeration;
+}
+
+- (double)terrainSunElevation {
+    return _data->terrainSunElevation;
+}
+
+- (double)terrainSunAzimuth {
+    return _data->terrainSunAzimuth;
+}
+
+// --------------------------------------------------------------------------
 #pragma mark - Rendering
 // --------------------------------------------------------------------------
 - (void)render {
-    if (_data->renderWindow) {
-        _data->renderWindow->Render();
-    }
+    if (!_data->renderWindow) return;
+
+    // Guard: only render when the container view is in a window.
+    // The first Render() creates VTK's internal Metal view; if that happens
+    // before the NSView is in a window the CAMetalLayer gets a 0×0 drawable
+    // size and the Metal context is permanently corrupted.
+    // viewDidMoveToWindow → resizeTo: calls renderWindow->Render() directly,
+    // so this guard does NOT block the initial valid render.
+#if TARGET_OS_IPHONE
+    if (!_renderView.window) return;
+#else
+    if (!_renderView.window) return;
+#endif
+
+    _data->renderWindow->Render();
 
     // Debug: Print OpenGL context information after first render
     static BOOL didLogOnce = NO;
@@ -730,6 +1837,7 @@ struct VTKBridgeData {
     if (_data->isDICOMMode || _data->isVolumeMode) {
         _data->renderer->ResetCamera();
     } else {
+        // Terrain & other modes: keep user's camera angle, just fix clipping
         _data->renderer->ResetCameraClippingRange();
     }
 

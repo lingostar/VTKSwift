@@ -2,7 +2,7 @@ name: VTKSwift
 options:
   bundleIdPrefix: com.developeracademy
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "17.0"
     macOS: "14.0"
   generateEmptyDirectories: true
   createIntermediateGroups: true

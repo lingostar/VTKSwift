@@ -3,6 +3,7 @@ import SwiftUI
 /// Rendering mode for the VTK view.
 enum VTKViewMode {
     case sphere
+    case molecule(pdbPath: String)
 }
 
 #if os(iOS)
@@ -37,6 +38,8 @@ struct VTKView: UIViewRepresentable {
         switch mode {
         case .sphere:
             bridge.setupSphere()
+        case .molecule(let pdbPath):
+            bridge.loadPDBFile(pdbPath)
         }
     }
 
@@ -75,6 +78,8 @@ struct VTKView: NSViewRepresentable {
         switch mode {
         case .sphere:
             bridge.setupSphere()
+        case .molecule(let pdbPath):
+            bridge.loadPDBFile(pdbPath)
         }
     }
 

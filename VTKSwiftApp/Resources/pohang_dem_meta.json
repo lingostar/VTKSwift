@@ -1,0 +1,25 @@
+{
+  "file": "pohang_dem.raw",
+  "width": 512,
+  "height": 512,
+  "dtype": "int16_le",
+  "bounds": {
+    "lat_north": 36.141944,
+    "lat_south": 35.999722,
+    "lon_west": 129.271667,
+    "lon_east": 129.413889
+  },
+  "spacing_meters": {
+    "x": 24.97,
+    "y": 30.87
+  },
+  "elevation_range": {
+    "min_m": -35,
+    "max_m": 374
+  },
+  "center": {
+    "lat": 36.019,
+    "lon": 129.343
+  },
+  "source": "SRTM 1-arc-second, tile N36E129"
+}

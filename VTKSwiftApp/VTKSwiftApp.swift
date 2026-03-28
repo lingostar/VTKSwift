@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct VTKSwiftApp: App {
@@ -14,5 +15,6 @@ struct VTKSwiftApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [CaseRecord.self, ReportRecord.self])
     }
 }

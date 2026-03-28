@@ -54,7 +54,7 @@ final class VolumeViewState: ObservableObject {
     @Published var isLoading = false
 
     /// Path of the loaded DICOM directory (for reload on view recreation).
-    var loadedPath: String?
+    @Published var loadedPath: String?
     /// Security-scoped bookmark data for sandboxed re-access.
     var bookmarkData: Data?
 }
@@ -65,12 +65,17 @@ final class VolumeViewState: ObservableObject {
 struct VolumeView: View {
     @ObservedObject var state: VolumeViewState
     @State private var showFilePicker = false
+    @State private var showExportSheet = false
+    @StateObject private var exportState = ExportState()
 
     var body: some View {
         VStack(spacing: 0) {
             if state.isLoaded {
-                // 3D Volume rendering view
+                // 3D Volume rendering view.
+                // .id(loadedPath) forces SwiftUI to destroy & recreate the
+                // Representable when the user opens a different DICOM folder.
                 VolumeRenderView(state: state)
+                    .id(state.loadedPath)
                     .ignoresSafeArea()
 
                 // Controls overlay
@@ -160,7 +165,17 @@ struct VolumeView: View {
                         Label("Open Folder", systemImage: "folder")
                     }
                 }
+                ToolbarItem(placement: .automatic) {
+                    Button {
+                        showExportSheet = true
+                    } label: {
+                        Label("Export 3D", systemImage: "square.and.arrow.up")
+                    }
+                }
             }
+        }
+        .sheet(isPresented: $showExportSheet) {
+            ExportSheetView(exportState: exportState, bridge: state.bridge)
         }
         .fileImporter(
             isPresented: $showFilePicker,
@@ -211,14 +226,17 @@ struct VolumeView: View {
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
-            loadVolume(from: url)
+            prepareVolume(from: url)
 
         case .failure(let error):
             state.errorMessage = error.localizedDescription
         }
     }
 
-    private func loadVolume(from url: URL) {
+    /// Validate the DICOM directory for volume rendering, save metadata, and
+    /// trigger view creation.  The actual VTKBridge is created only in
+    /// VolumeRenderView.makeNSView/makeUIView.
+    private func prepareVolume(from url: URL) {
         state.errorMessage = nil
         state.isLoading = true
 
@@ -238,24 +256,25 @@ struct VolumeView: View {
         )
         #endif
 
-        // VTKBridge creates NSView — must stay on main thread.
-        // Use asyncAfter so SwiftUI can render the loading indicator first.
+        // Quick-validate: use a temporary bridge to check DICOM volume data.
+        // asyncAfter lets SwiftUI render the loading indicator first.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            let newBridge = VTKBridge(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
-            let success = newBridge.loadVolume(fromDICOMDirectory: url.path)
+            let tempBridge = VTKBridge(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
+            let success = tempBridge.loadVolume(fromDICOMDirectory: url.path)
 
             if didStart { url.stopAccessingSecurityScopedResource() }
 
             state.isLoading = false
             if success {
-                state.bridge = newBridge
                 state.selectedPreset = .softTissue
                 state.opacityScale = 1.0
                 state.loadedPath = url.path
+                // bridge is intentionally NOT stored — VolumeRenderView creates its own.
                 state.isLoaded = true
             } else {
                 state.errorMessage = "Failed to load volume from selected directory.\nEnsure the folder contains valid DICOM files."
             }
+            // tempBridge deallocates here — only used for validation.
         }
     }
 }
@@ -275,19 +294,21 @@ private struct VolumeRenderView: UIViewRepresentable {
         let bridge = VTKBridge(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
         context.coordinator.bridge = bridge
 
-        // Reload data if previously loaded
+        // Load volume data (no rendering — that waits until view is in hierarchy)
         if let path = resolveAccessiblePath() {
-            let success = bridge.loadVolume(fromDICOMDirectory: path)
-            if success {
-                bridge.apply(state.selectedPreset.vtkPreset)
-                bridge.setVolumeOpacityScale(state.opacityScale)
-                state.bridge = bridge
-            }
+            _ = bridge.loadVolume(fromDICOMDirectory: path)
         }
 
         let view = bridge.renderView
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            bridge.render()
+        // Defer all state updates & rendering until the view is in the hierarchy.
+        // Setting @Published in makeUIView causes "Publishing changes from within
+        // view updates" and undefined SwiftUI behavior.
+        let preset = state.selectedPreset.vtkPreset
+        let opacity = state.opacityScale
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            self.state.bridge = bridge
+            bridge.apply(preset)
+            bridge.setVolumeOpacityScale(opacity)
         }
         return view
     }
@@ -331,19 +352,21 @@ private struct VolumeRenderView: NSViewRepresentable {
         let bridge = VTKBridge(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
         context.coordinator.bridge = bridge
 
-        // Reload data if previously loaded
+        // Load volume data (no rendering — that waits until view is in hierarchy)
         if let path = resolveAccessiblePath() {
-            let success = bridge.loadVolume(fromDICOMDirectory: path)
-            if success {
-                bridge.apply(state.selectedPreset.vtkPreset)
-                bridge.setVolumeOpacityScale(state.opacityScale)
-                state.bridge = bridge
-            }
+            _ = bridge.loadVolume(fromDICOMDirectory: path)
         }
 
         let view = bridge.renderView
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            bridge.render()
+        // Defer all state updates & rendering until the view is in the hierarchy.
+        // Setting @Published in makeNSView causes "Publishing changes from within
+        // view updates" and undefined SwiftUI behavior.
+        let preset = state.selectedPreset.vtkPreset
+        let opacity = state.opacityScale
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            self.state.bridge = bridge
+            bridge.apply(preset)
+            bridge.setVolumeOpacityScale(opacity)
         }
         return view
     }
