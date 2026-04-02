@@ -14,8 +14,9 @@ DerivedData/
 *.dSYM
 *.xcuserstate
 
-# Frameworks (generated)
+# Frameworks (generated, contain large binaries >100MB)
 Frameworks/
+framework/
 
 # Old scaffold (replaced by VTKSwiftApp)
 VTKSwift/

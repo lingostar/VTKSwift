@@ -238,6 +238,10 @@ typedef NS_ENUM(NSInteger, VTKTerrainColorScheme) {
 /// Trigger a render pass.
 - (void)render;
 
+/// Perform the actual VTK Render() call.  On iOS this is called from the
+/// GLKView delegate so that GLKView's FBO is already bound.
+- (void)performVTKRender;
+
 /// Resize the render window to match a new frame.
 /// @param size The new size for the render window.
 - (void)resizeTo:(CGSize)size;

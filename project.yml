@@ -86,6 +86,94 @@ targets:
           SWIFT_OPTIMIZATION_LEVEL: "-O"
     dependencies: []
 
+  # ---- OutChart iOS (iPhone + iPad) ----
+  OutChart-iOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: OutChart
+        excludes:
+          - "**/.DS_Store"
+      - path: VTKSwiftApp/Bridge/VTKBridge.h
+        buildPhase: none
+      - path: VTKSwiftApp/Bridge/VTKBridge.mm
+        buildPhase: sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.developeracademy.OutChart
+        PRODUCT_NAME: OutChart
+        GENERATE_INFOPLIST_FILE: true
+        SWIFT_OBJC_BRIDGING_HEADER: OutChart/Bridge/OutChart-Bridging-Header.h
+        TARGETED_DEVICE_FAMILY: "1,2"  # iPhone + iPad
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: true
+        EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
+        HEADER_SEARCH_PATHS[sdk=iphoneos*]:
+          - "$(PROJECT_DIR)/vtk-install/ios-arm64/include/vtk-9.4"
+          - "$(PROJECT_DIR)/VTKSwiftApp/Bridge"
+        HEADER_SEARCH_PATHS[sdk=iphonesimulator*]:
+          - "$(PROJECT_DIR)/vtk-install/ios-sim-arm64/include/vtk-9.4"
+          - "$(PROJECT_DIR)/VTKSwiftApp/Bridge"
+        LIBRARY_SEARCH_PATHS[sdk=iphoneos*]:
+          - "$(PROJECT_DIR)/vtk-install/ios-arm64/lib"
+        LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]:
+          - "$(PROJECT_DIR)/vtk-install/ios-sim-arm64/lib"
+        OTHER_LDFLAGS:
+          - "-lVTK"
+          - "-lz"
+          - "-framework OpenGLES"
+          - "-framework UIKit"
+          - "-framework QuartzCore"
+          - "-framework Metal"
+          - "-framework MetalKit"
+          - "-framework ModelIO"
+        CLANG_CXX_LANGUAGE_STANDARD: c++17
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+    dependencies: []
+
+  # ---- OutChart macOS ----
+  OutChart-macOS:
+    type: application
+    platform: macOS
+    sources:
+      - path: OutChart
+        excludes:
+          - "**/.DS_Store"
+      - path: VTKSwiftApp/Bridge/VTKBridge.h
+        buildPhase: none
+      - path: VTKSwiftApp/Bridge/VTKBridge.mm
+        buildPhase: sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.developeracademy.OutChart
+        PRODUCT_NAME: OutChart
+        GENERATE_INFOPLIST_FILE: true
+        SWIFT_OBJC_BRIDGING_HEADER: OutChart/Bridge/OutChart-Bridging-Header.h
+        HEADER_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/vtk-install/macos-arm64/include/vtk-9.4"
+          - "$(PROJECT_DIR)/VTKSwiftApp/Bridge"
+        LIBRARY_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/vtk-install/macos-arm64/lib"
+        OTHER_LDFLAGS:
+          - "-lVTK"
+          - "-lz"
+          - "-framework OpenGL"
+          - "-framework Cocoa"
+          - "-framework QuartzCore"
+          - "-framework Metal"
+          - "-framework MetalKit"
+          - "-framework ModelIO"
+        CLANG_CXX_LANGUAGE_STANDARD: c++17
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+    dependencies: []
+
 schemes:
   VTKSwift-iOS:
     build:
@@ -97,5 +185,17 @@ schemes:
     build:
       targets:
         VTKSwiftApp-macOS: all
+    run:
+      config: Debug
+  OutChart-iOS:
+    build:
+      targets:
+        OutChart-iOS: all
+    run:
+      config: Debug
+  OutChart-macOS:
+    build:
+      targets:
+        OutChart-macOS: all
     run:
       config: Debug

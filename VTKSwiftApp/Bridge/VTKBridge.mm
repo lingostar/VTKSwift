@@ -16,6 +16,7 @@ VTK_MODULE_INIT(vtkRenderingVolumeOpenGL2);
 VTK_MODULE_INIT(vtkInteractionStyle);
 
 #include "vtkSmartPointer.h"
+#include "vtkCommand.h"
 #include "vtkSphereSource.h"
 #include "vtkPolyDataMapper.h"
 #include "vtkActor.h"
@@ -45,6 +46,7 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 // Data preprocessing
 #include "vtkImageThreshold.h"
 #include "vtkImageResample.h"
+#include "vtkImageCast.h"
 
 // Molecular visualization (macOS only — chemistry libs not built for iOS)
 #if !TARGET_OS_IPHONE
@@ -83,7 +85,12 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 #if TARGET_OS_IPHONE
 #include "vtkIOSRenderWindow.h"
 #include "vtkIOSRenderWindowInteractor.h"
+#include "vtkOpenGLRenderWindow.h"
+#include "vtkOpenGLState.h"
+#include "vtkOpenGLFramebufferObject.h"
+#include "vtkOutputWindow.h"
 #include <OpenGLES/ES3/gl.h>
+#import <GLKit/GLKit.h>
 #else
 #include "vtkCocoaRenderWindow.h"
 #include "vtkCocoaRenderWindowInteractor.h"
@@ -141,6 +148,8 @@ struct VTKBridgeData {
     double  terrainSunAzimuth = 180.0;
     double  terrainMinElev = 0, terrainMaxElev = 1000;
     VTKTerrainColorScheme terrainColorScheme = VTKTerrainColorSchemeElevation;
+
+    // (Custom blit removed — VTK's BlitToCurrent handles the blit natively.)
 };
 
 // --------------------------------------------------------------------------
@@ -150,25 +159,279 @@ struct VTKBridgeData {
 // --------------------------------------------------------------------------
 @class VTKBridge;
 
+// Forward-declare internal method used by VTKContainerView's touch handling
+@interface VTKBridge ()
+- (vtkRenderWindowInteractor *)vtkInteractor;
+@end
+
 #if TARGET_OS_IPHONE
-@interface VTKContainerView : UIView
+@interface VTKContainerView : UIView <GLKViewDelegate, UIGestureRecognizerDelegate>
 @property (nonatomic, weak) VTKBridge *bridge;
+@property (nonatomic) BOOL didInitialRender;
+@property (nonatomic, strong) EAGLContext *eaglContext;
+@property (nonatomic, strong) GLKView *glkView;
+/// Tracks whether a rotate (left-button) interaction is in progress.
+@property (nonatomic) BOOL isRotating;
+/// Tracks whether a pan (middle-button) interaction is in progress.
+@property (nonatomic) BOOL isPanning;
 @end
 
 @implementation VTKContainerView
+
+- (void)setupGLContext {
+    if (self.eaglContext) return; // already set up
+
+    // Create OpenGL ES 3.0 context
+    self.eaglContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
+    if (!self.eaglContext) {
+        NSLog(@"[VTKBridge] Failed to create EAGLContext with ES3, trying ES2...");
+        self.eaglContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+    }
+    if (!self.eaglContext) {
+        NSLog(@"[VTKBridge] ERROR: Could not create any EAGLContext!");
+        return;
+    }
+
+    // Make context current so VTK can use it
+    [EAGLContext setCurrentContext:self.eaglContext];
+
+    // Create GLKView as rendering surface with this view as delegate.
+    // When [glkView display] is called, GLKView:
+    //   1) binds its own FBO (renderbuffer backed by CAEAGLLayer)
+    //   2) calls delegate's glkView:drawInRect:
+    //   3) presents the renderbuffer to screen
+    self.glkView = [[GLKView alloc] initWithFrame:self.bounds context:self.eaglContext];
+    self.glkView.delegate = self;
+    self.glkView.drawableDepthFormat = GLKViewDrawableDepthFormat24;
+    self.glkView.drawableColorFormat = GLKViewDrawableColorFormatRGBA8888;
+    self.glkView.drawableStencilFormat = GLKViewDrawableStencilFormatNone;
+    self.glkView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    self.glkView.enableSetNeedsDisplay = NO; // We drive rendering manually via display
+    self.glkView.userInteractionEnabled = NO;  // Let touches pass through to VTKContainerView
+    self.multipleTouchEnabled = YES;            // Enable multi-touch for pinch/pan
+    [self addSubview:self.glkView];
+
+    // Wire up gesture recognizers for 3D interaction (rotate/pan/zoom)
+    [self setupGestureRecognizers];
+
+    NSLog(@"[VTKBridge] EAGLContext created (ES%d), GLKView configured",
+          (int)self.eaglContext.API);
+}
+
+/// GLKViewDelegate — called by [glkView display].
+/// At this point, GLKView has already bound its internal FBO.
+/// VTK's BlitToCurrent mode will blit into this FBO.
+- (void)glkView:(GLKView *)view drawInRect:(CGRect)rect {
+    if (self.bridge) {
+        [self.bridge performVTKRender];
+    }
+}
+
+- (void)makeGLContextCurrent {
+    if (self.eaglContext && [EAGLContext currentContext] != self.eaglContext) {
+        [EAGLContext setCurrentContext:self.eaglContext];
+    }
+}
+
+- (void)didMoveToWindow {
+    [super didMoveToWindow];
+    if (self.window && self.bridge && !self.didInitialRender) {
+        self.didInitialRender = YES;
+        __weak VTKContainerView *weakSelf = self;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            VTKContainerView *strongSelf = weakSelf;
+            if (!strongSelf || !strongSelf.bridge) return;
+            [strongSelf makeGLContextCurrent];
+            CGSize sz = strongSelf.bounds.size;
+            if (sz.width > 0 && sz.height > 0) {
+                [strongSelf.bridge resizeTo:sz];
+            }
+        });
+    }
+}
+
 - (void)layoutSubviews {
     [super layoutSubviews];
-    // Only resize once the view is in a window (Metal context valid)
+    if (self.glkView) {
+        self.glkView.frame = self.bounds;
+    }
     if (self.window && self.bridge && self.bounds.size.width > 0 && self.bounds.size.height > 0) {
+        [self makeGLContextCurrent];
         [self.bridge resizeTo:self.bounds.size];
     }
 }
+
+// --------------------------------------------------------------------------
+#pragma mark - Gesture Recognizers → VTK Interactor
+// --------------------------------------------------------------------------
+// UIGestureRecognizers are used instead of raw touchesBegan/Moved/Ended so
+// that UIKit's gesture-conflict resolution keeps navigation back-swipe,
+// parent ScrollViews, and other system gestures from stealing touches that
+// belong to the volume interaction.
+//
+// Mapping:
+//   1-finger pan  → rotate  (VTK LeftButton drag = trackball rotate)
+//   2-finger pan  → pan     (VTK MiddleButton drag = camera translate)
+//   pinch         → zoom    (VTK MouseWheel events)
+
+- (void)setupGestureRecognizers {
+    // --- 1-finger rotate ---
+    UIPanGestureRecognizer *rotatePan = [[UIPanGestureRecognizer alloc]
+        initWithTarget:self action:@selector(handleRotate:)];
+    rotatePan.minimumNumberOfTouches = 1;
+    rotatePan.maximumNumberOfTouches = 1;
+    rotatePan.delegate = self;
+    [self addGestureRecognizer:rotatePan];
+
+    // --- 2-finger pan ---
+    UIPanGestureRecognizer *twoPan = [[UIPanGestureRecognizer alloc]
+        initWithTarget:self action:@selector(handlePan:)];
+    twoPan.minimumNumberOfTouches = 2;
+    twoPan.maximumNumberOfTouches = 2;
+    twoPan.delegate = self;
+    [self addGestureRecognizer:twoPan];
+
+    // --- Pinch zoom ---
+    UIPinchGestureRecognizer *pinch = [[UIPinchGestureRecognizer alloc]
+        initWithTarget:self action:@selector(handlePinch:)];
+    pinch.delegate = self;
+    [self addGestureRecognizer:pinch];
+}
+
+/// Convert a UIKit point (origin top-left, points) to VTK coords (origin bottom-left, pixels).
+- (CGPoint)vtkPointFromUIPoint:(CGPoint)pt {
+    CGFloat scale = self.glkView.contentScaleFactor;
+    CGFloat viewH = self.glkView.bounds.size.height;
+    return CGPointMake(pt.x * scale, (viewH - pt.y) * scale);
+}
+
+- (vtkRenderWindowInteractor *)vtkInteractor {
+    if (!self.bridge) return nullptr;
+    return [self.bridge vtkInteractor];
+}
+
+// --- Rotate (1-finger drag → VTK left-button trackball) ---
+- (void)handleRotate:(UIPanGestureRecognizer *)gr {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+
+    CGPoint uiPt = [gr locationInView:self.glkView];
+    CGPoint pt = [self vtkPointFromUIPoint:uiPt];
+
+    switch (gr.state) {
+        case UIGestureRecognizerStateBegan:
+            iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+            iren->InvokeEvent(vtkCommand::LeftButtonPressEvent, nullptr);
+            self.isRotating = YES;
+            break;
+        case UIGestureRecognizerStateChanged:
+            iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+            iren->InvokeEvent(vtkCommand::MouseMoveEvent, nullptr);
+            [self.bridge render];
+            break;
+        case UIGestureRecognizerStateEnded:
+        case UIGestureRecognizerStateCancelled:
+            iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+            iren->InvokeEvent(vtkCommand::LeftButtonReleaseEvent, nullptr);
+            self.isRotating = NO;
+            [self.bridge render];
+            break;
+        default:
+            break;
+    }
+}
+
+// --- Pan (2-finger drag → VTK middle-button translate) ---
+- (void)handlePan:(UIPanGestureRecognizer *)gr {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+
+    CGPoint uiPt = [gr locationInView:self.glkView];
+    CGPoint pt = [self vtkPointFromUIPoint:uiPt];
+
+    switch (gr.state) {
+        case UIGestureRecognizerStateBegan:
+            // End any in-progress rotate so they don't overlap
+            if (self.isRotating) {
+                iren->InvokeEvent(vtkCommand::LeftButtonReleaseEvent, nullptr);
+                self.isRotating = NO;
+            }
+            iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+            iren->InvokeEvent(vtkCommand::MiddleButtonPressEvent, nullptr);
+            self.isPanning = YES;
+            break;
+        case UIGestureRecognizerStateChanged:
+            iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+            iren->InvokeEvent(vtkCommand::MouseMoveEvent, nullptr);
+            [self.bridge render];
+            break;
+        case UIGestureRecognizerStateEnded:
+        case UIGestureRecognizerStateCancelled:
+            iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+            iren->InvokeEvent(vtkCommand::MiddleButtonReleaseEvent, nullptr);
+            self.isPanning = NO;
+            [self.bridge render];
+            break;
+        default:
+            break;
+    }
+}
+
+// --- Pinch (zoom → VTK mouse-wheel) ---
+- (void)handlePinch:(UIPinchGestureRecognizer *)gr {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+
+    if (gr.state == UIGestureRecognizerStateChanged) {
+        CGPoint uiPt = [gr locationInView:self.glkView];
+        CGPoint pt = [self vtkPointFromUIPoint:uiPt];
+        iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+
+        if (gr.scale > 1.02) {
+            iren->InvokeEvent(vtkCommand::MouseWheelForwardEvent, nullptr);
+            gr.scale = 1.0;   // reset so next callback is relative
+        } else if (gr.scale < 0.98) {
+            iren->InvokeEvent(vtkCommand::MouseWheelBackwardEvent, nullptr);
+            gr.scale = 1.0;
+        }
+        [self.bridge render];
+    }
+}
+
+// --------------------------------------------------------------------------
+#pragma mark - UIGestureRecognizerDelegate
+// --------------------------------------------------------------------------
+// Allow pinch + pan to fire simultaneously (zoom while panning).
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)a
+    shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)b {
+    // Allow our own recognizers to work together
+    if ([a.view isEqual:self] && [b.view isEqual:self]) {
+        return YES;
+    }
+    return NO;
+}
+
+// Prevent the navigation back-swipe and parent scroll views from
+// claiming touches that start inside this view.
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
+    shouldBeRequiredToFailByGestureRecognizer:(UIGestureRecognizer *)other {
+    // Our recognizers take priority over anything from parent views
+    if ([gestureRecognizer.view isEqual:self] && ![other.view isEqual:self]) {
+        return YES;
+    }
+    return NO;
+}
+
 @end
 
 #else
-@interface VTKContainerView : NSView
+@interface VTKContainerView : NSView <NSGestureRecognizerDelegate>
 @property (nonatomic, weak) VTKBridge *bridge;
 @property (nonatomic) BOOL didInitialRender;
+/// Tracks whether a rotate (left-button) interaction is in progress.
+@property (nonatomic) BOOL isRotating;
+/// Tracks whether a pan (middle-button) interaction is in progress.
+@property (nonatomic) BOOL isPanning;
 @end
 
 @implementation VTKContainerView
@@ -204,6 +467,180 @@ struct VTKBridgeData {
     return YES;  // Match SwiftUI's coordinate system
 }
 
+// Accept first responder so we receive key/mouse events directly.
+- (BOOL)acceptsFirstResponder {
+    return YES;
+}
+
+// --------------------------------------------------------------------------
+#pragma mark - Mouse / Trackpad → VTK Interactor (macOS)
+// --------------------------------------------------------------------------
+// Mapping (mirrors iOS gesture recognizer approach):
+//   Left-button drag          → rotate  (VTK LeftButton = trackball rotate)
+//   Right-button drag / ⌥+drag → zoom   (VTK RightButton = dolly)
+//   Middle-button drag / ⌘+drag → pan    (VTK MiddleButton = camera translate)
+//   Scroll wheel              → zoom    (VTK MouseWheel events)
+//   Trackpad pinch            → zoom    (VTK MouseWheel events)
+
+- (vtkRenderWindowInteractor *)vtkInteractor {
+    if (!self.bridge) return nullptr;
+    return [self.bridge vtkInteractor];
+}
+
+/// Convert an NSEvent location to VTK coordinates (origin bottom-left, pixels).
+/// VTK expects pixel coordinates with (0,0) at the bottom-left.
+- (CGPoint)vtkPointFromEvent:(NSEvent *)event {
+    NSPoint loc = [self convertPoint:event.locationInWindow fromView:nil];
+    // NSView with isFlipped=YES has origin at top-left → flip Y for VTK
+    CGFloat viewH = self.bounds.size.height;
+    return CGPointMake(loc.x, viewH - loc.y);
+}
+
+// --- Left mouse button → Rotate ---
+- (void)mouseDown:(NSEvent *)event {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+    CGPoint pt = [self vtkPointFromEvent:event];
+
+    // ⌘+click → pan (middle button)
+    if (event.modifierFlags & NSEventModifierFlagCommand) {
+        iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+        iren->InvokeEvent(vtkCommand::MiddleButtonPressEvent, nullptr);
+        self.isPanning = YES;
+        return;
+    }
+    // ⌥+click → zoom (right button)
+    if (event.modifierFlags & NSEventModifierFlagOption) {
+        iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+        iren->InvokeEvent(vtkCommand::RightButtonPressEvent, nullptr);
+        return;
+    }
+
+    iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+    iren->InvokeEvent(vtkCommand::LeftButtonPressEvent, nullptr);
+    self.isRotating = YES;
+}
+
+- (void)mouseDragged:(NSEvent *)event {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+    CGPoint pt = [self vtkPointFromEvent:event];
+    iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+    iren->InvokeEvent(vtkCommand::MouseMoveEvent, nullptr);
+    [self.bridge render];
+}
+
+- (void)mouseUp:(NSEvent *)event {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+    CGPoint pt = [self vtkPointFromEvent:event];
+    iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+
+    if (self.isPanning) {
+        iren->InvokeEvent(vtkCommand::MiddleButtonReleaseEvent, nullptr);
+        self.isPanning = NO;
+    } else if (event.modifierFlags & NSEventModifierFlagOption) {
+        iren->InvokeEvent(vtkCommand::RightButtonReleaseEvent, nullptr);
+    } else {
+        iren->InvokeEvent(vtkCommand::LeftButtonReleaseEvent, nullptr);
+        self.isRotating = NO;
+    }
+    [self.bridge render];
+}
+
+// --- Right mouse button → Zoom ---
+- (void)rightMouseDown:(NSEvent *)event {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+    CGPoint pt = [self vtkPointFromEvent:event];
+    iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+    iren->InvokeEvent(vtkCommand::RightButtonPressEvent, nullptr);
+}
+
+- (void)rightMouseDragged:(NSEvent *)event {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+    CGPoint pt = [self vtkPointFromEvent:event];
+    iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+    iren->InvokeEvent(vtkCommand::MouseMoveEvent, nullptr);
+    [self.bridge render];
+}
+
+- (void)rightMouseUp:(NSEvent *)event {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+    CGPoint pt = [self vtkPointFromEvent:event];
+    iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+    iren->InvokeEvent(vtkCommand::RightButtonReleaseEvent, nullptr);
+    [self.bridge render];
+}
+
+// --- Middle mouse button → Pan ---
+- (void)otherMouseDown:(NSEvent *)event {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+    CGPoint pt = [self vtkPointFromEvent:event];
+    iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+    iren->InvokeEvent(vtkCommand::MiddleButtonPressEvent, nullptr);
+    self.isPanning = YES;
+}
+
+- (void)otherMouseDragged:(NSEvent *)event {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+    CGPoint pt = [self vtkPointFromEvent:event];
+    iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+    iren->InvokeEvent(vtkCommand::MouseMoveEvent, nullptr);
+    [self.bridge render];
+}
+
+- (void)otherMouseUp:(NSEvent *)event {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+    CGPoint pt = [self vtkPointFromEvent:event];
+    iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+    iren->InvokeEvent(vtkCommand::MiddleButtonReleaseEvent, nullptr);
+    self.isPanning = NO;
+    [self.bridge render];
+}
+
+// --- Scroll wheel → Zoom ---
+- (void)scrollWheel:(NSEvent *)event {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+    CGPoint pt = [self vtkPointFromEvent:event];
+    iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+
+    CGFloat dy = event.scrollingDeltaY;
+    if (event.hasPreciseScrollingDeltas) {
+        // Trackpad: accumulate small deltas → discrete wheel events
+        dy *= 0.1;  // Scale down trackpad sensitivity
+    }
+    if (dy > 0.5) {
+        iren->InvokeEvent(vtkCommand::MouseWheelForwardEvent, nullptr);
+        [self.bridge render];
+    } else if (dy < -0.5) {
+        iren->InvokeEvent(vtkCommand::MouseWheelBackwardEvent, nullptr);
+        [self.bridge render];
+    }
+}
+
+// --- Trackpad pinch → Zoom ---
+- (void)magnifyWithEvent:(NSEvent *)event {
+    vtkRenderWindowInteractor *iren = [self vtkInteractor];
+    if (!iren) return;
+    CGPoint pt = [self vtkPointFromEvent:event];
+    iren->SetEventInformation((int)pt.x, (int)pt.y, 0, 0);
+
+    if (event.magnification > 0.01) {
+        iren->InvokeEvent(vtkCommand::MouseWheelForwardEvent, nullptr);
+        [self.bridge render];
+    } else if (event.magnification < -0.01) {
+        iren->InvokeEvent(vtkCommand::MouseWheelBackwardEvent, nullptr);
+        [self.bridge render];
+    }
+}
+
 @end
 #endif
 
@@ -221,6 +658,13 @@ struct VTKBridgeData {
     if (self) {
         _frame = frame;
         _data = new VTKBridgeData();
+
+#if TARGET_OS_IPHONE
+        // Route all VTK error/warning messages to stderr (visible in Xcode console).
+        // Critical for diagnosing shader compilation failures on ES 3.0.
+        vtkOutputWindow::GetInstance()->SetDisplayModeToAlwaysStdErr();
+#endif
+
         [self setupRenderWindow];
     }
     return self;
@@ -272,6 +716,12 @@ struct VTKBridgeData {
         delete _data;
         _data = nullptr;
     }
+#if TARGET_OS_IPHONE
+    // Clean up GL context
+    if (_renderView.eaglContext && [EAGLContext currentContext] == _renderView.eaglContext) {
+        [EAGLContext setCurrentContext:nil];
+    }
+#endif
 }
 
 // --------------------------------------------------------------------------
@@ -280,9 +730,20 @@ struct VTKBridgeData {
 - (void)setupRenderWindow {
     // ---- Renderer ----
     _data->renderer = vtkSmartPointer<vtkRenderer>::New();
-    _data->renderer->SetBackground(0.1, 0.1, 0.2);   // Dark blue bottom
-    _data->renderer->SetBackground2(0.4, 0.5, 0.7);   // Lighter blue top
+    _data->renderer->SetBackground(0.2, 0.3, 0.5);   // Medium blue bottom
+    _data->renderer->SetBackground2(0.5, 0.7, 0.9);   // Lighter blue top
+#if TARGET_OS_IPHONE
+    // VTK default BackgroundAlpha=0.0 → Transparent()=true → skips color clear.
+    // On macOS the gradient shader fills color regardless, but on iOS ES 3.0
+    // the gradient shader may fail, leaving the FBO at (0,0,0,0).
+    // Setting alpha to 1.0 ensures glClear writes the background color.
+    _data->renderer->SetBackgroundAlpha(1.0);
+    // Gradient background uses a shader quad that may fail on ES 3.0.
+    // Use solid color clear instead — glClear always works.
+    _data->renderer->SetGradientBackground(false);
+#else
     _data->renderer->SetGradientBackground(true);
+#endif
 
     int w = (int)_frame.size.width;
     int h = (int)_frame.size.height;
@@ -294,10 +755,23 @@ struct VTKBridgeData {
     _renderView = [[VTKContainerView alloc] initWithFrame:CGRectMake(0, 0, w, h)];
     _renderView.bridge = self;
 
+    // Set up EAGLContext + GLKView BEFORE creating VTK render window
+    [_renderView setupGLContext];
+
     vtkSmartPointer<vtkIOSRenderWindow> renWin =
         vtkSmartPointer<vtkIOSRenderWindow>::New();
-    renWin->SetSize(w, h);
-    renWin->SetParentId((__bridge void *)_renderView);
+
+    // Use retina-aware pixel dimensions
+    double scale = _renderView.glkView ? _renderView.glkView.contentScaleFactor : 1.0;
+    int pw = (int)(w * scale);
+    int ph = (int)(h * scale);
+    renWin->SetSize(pw, ph);
+    renWin->SetMultiSamples(0);   // ES 3.0: avoid multisampled FBO complications
+
+    // Don't initialize GL here — the view is not yet in a window, so GLKView's
+    // drawable/FBO isn't ready. VTK will auto-initialize on the first Render()
+    // call, which goes through [glkView display] → delegate → performVTKRender.
+    // At that point GLKView has already bound its FBO.
     _data->renderWindow = renWin;
 
     vtkSmartPointer<vtkIOSRenderWindowInteractor> iren =
@@ -331,6 +805,13 @@ struct VTKBridgeData {
         vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
     _data->interactor->SetRenderWindow(_data->renderWindow);
     _data->interactor->SetInteractorStyle(style);
+
+    // Initialize the interactor — connects it to the render window so that
+    // mouse/touch events are dispatched correctly.
+    // On macOS, this calls vtkCocoaGLView's SetInteractor() enabling mouse handling.
+    // On iOS, we forward touch events manually but Initialize() is still needed
+    // to set up internal state (Enabled flag, Size, etc.).
+    _data->interactor->Initialize();
 }
 
 // --------------------------------------------------------------------------
@@ -664,6 +1145,20 @@ struct VTKBridgeData {
         pipelineOutput = resample->GetOutputPort();
     }
 
+#if TARGET_OS_IPHONE
+    // 3. Cast to float for ES 3.0 compatibility.
+    // OpenGL ES 3.0 has NO GL_R16 (normalized 16-bit) format. VTK falls back
+    // to GL_R32F as internal format but still passes GL_SHORT data type to
+    // glTexImage3D — this combination is invalid on ES 3.0 (GL_INVALID_OPERATION).
+    // Converting to float ensures glTexImage3D gets GL_R32F + GL_FLOAT which works.
+    vtkSmartPointer<vtkImageCast> castToFloat = vtkSmartPointer<vtkImageCast>::New();
+    castToFloat->SetInputConnection(pipelineOutput);
+    castToFloat->SetOutputScalarTypeToFloat();
+    castToFloat->Update();
+    pipelineOutput = castToFloat->GetOutputPort();
+    NSLog(@"[VTKBridge] Cast volume data to float for ES 3.0 texture compatibility");
+#endif
+
     // --- Volume Mapper ---
     _data->volumeMapper = vtkSmartPointer<vtkSmartVolumeMapper>::New();
     _data->volumeMapper->SetInputConnection(pipelineOutput);
@@ -698,8 +1193,16 @@ struct VTKBridgeData {
     // Setup scene
     _data->renderer->RemoveAllViewProps();
     _data->renderer->AddVolume(_data->volume);
+#if TARGET_OS_IPHONE
+    // Use a visible non-black background so we can distinguish
+    // "volume invisible" from "nothing renders at all".
+    _data->renderer->SetBackground(0.1, 0.1, 0.3);
+    _data->renderer->SetGradientBackground(false);
+    _data->renderer->SetBackgroundAlpha(1.0);
+#else
     _data->renderer->SetBackground(0.0, 0.0, 0.0);
     _data->renderer->SetGradientBackground(false);
+#endif
     _data->renderer->ResetCamera();
 
     // Switch to trackball for 3D interaction
@@ -1775,52 +2278,119 @@ struct VTKBridgeData {
 - (void)render {
     if (!_data->renderWindow) return;
 
-    // Guard: only render when the container view is in a window.
-    // The first Render() creates VTK's internal Metal view; if that happens
-    // before the NSView is in a window the CAMetalLayer gets a 0×0 drawable
-    // size and the Metal context is permanently corrupted.
-    // viewDidMoveToWindow → resizeTo: calls renderWindow->Render() directly,
-    // so this guard does NOT block the initial valid render.
 #if TARGET_OS_IPHONE
+    // Guard: only render when the container view is in a window.
     if (!_renderView.window) return;
+    [_renderView makeGLContextCurrent];
+
+    // Drive rendering through GLKView's display loop.
+    // [glkView display] will:
+    //   1) make EAGLContext current
+    //   2) bind GLKView's internal FBO (renderbuffer backed by CAEAGLLayer)
+    //   3) call our delegate method glkView:drawInRect: → performVTKRender
+    //   4) present the renderbuffer to screen
+    if (_renderView.glkView) {
+        [_renderView.glkView display];
+    }
 #else
     if (!_renderView.window) return;
+    _data->renderWindow->Render();
 #endif
+}
 
+/// Returns VTK's interactor (used by VTKContainerView for touch events).
+- (vtkRenderWindowInteractor *)vtkInteractor {
+    return _data ? _data->interactor.Get() : nullptr;
+}
+
+/// Called from GLKView delegate (iOS) or directly.
+/// On iOS, GLKView has already bound its FBO before this is called.
+/// This follows VTK's official iOS example pattern: just call Render().
+/// VTK's BlitToCurrent mode handles the blit from display FBO → GLKView FBO.
+- (void)performVTKRender {
+    if (!_data->renderWindow) return;
+
+#if TARGET_OS_IPHONE
+    // Sync VTK's state tracker with GLKView's FBO so VTK's push/pop works correctly.
+    vtkOpenGLRenderWindow *glRenWin =
+        vtkOpenGLRenderWindow::SafeDownCast(_data->renderWindow);
+    if (glRenWin && glRenWin->GetState()) {
+        GLint glkFBO = 0;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &glkFBO);
+        glRenWin->GetState()->vtkglBindFramebuffer(GL_FRAMEBUFFER, (unsigned int)glkFBO);
+    }
+
+    // VTK's Render() does: Start (bind internal FBOs) → render scene →
+    // End → Frame (resolve render→display, blit display→current).
+    // BlitToCurrent mode blits to GLKView's FBO. GLKView then presents it.
     _data->renderWindow->Render();
 
-    // Debug: Print OpenGL context information after first render
-    static BOOL didLogOnce = NO;
-    if (!didLogOnce) {
-        didLogOnce = YES;
-        const char *version = (const char *)glGetString(GL_VERSION);
-        const char *renderer = (const char *)glGetString(GL_RENDERER);
-        const char *glslVersion = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
-        NSLog(@"[VTKBridge] GL_VERSION: %s", version ?: "(null)");
-        NSLog(@"[VTKBridge] GL_RENDERER: %s", renderer ?: "(null)");
-        NSLog(@"[VTKBridge] GL_SHADING_LANGUAGE_VERSION: %s", glslVersion ?: "(null)");
-        NSLog(@"[VTKBridge] RenderWindow class: %s",
-              _data->renderWindow->GetClassName());
-#if TARGET_OS_IPHONE
-        NSLog(@"[VTKBridge] Build target: iOS");
-#else
-        NSLog(@"[VTKBridge] Build target: macOS");
-#endif
+    static int renderCount = 0;
+    renderCount++;
+    if (renderCount <= 2) {
+        GLenum glErr = glGetError();
+        NSLog(@"[VTKBridge] GL_VERSION: %s  GLSL: %s  Renderer: %s  glErr=%d",
+              (const char *)glGetString(GL_VERSION) ?: "(null)",
+              (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION) ?: "(null)",
+              (const char *)glGetString(GL_RENDERER) ?: "(null)",
+              (int)glErr);
+
+        // Read center pixel from currently-bound FBO (GLKView's FBO after blit)
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        int cx = viewport[2] / 2, cy = viewport[3] / 2;
+        unsigned char pixel[4] = {0};
+        glReadPixels(cx, cy, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+        NSLog(@"[VTKBridge] PostRender center pixel: R=%d G=%d B=%d A=%d  (viewport: %d x %d)",
+              pixel[0], pixel[1], pixel[2], pixel[3], viewport[2], viewport[3]);
+
+        // Check if volume mode — log volume-specific info
+        if (_data->isVolumeMode && _data->volumeMapper) {
+            NSLog(@"[VTKBridge] Volume mode active. SmartMapper: %s, LastUsedRenderMode: %d",
+                  _data->volumeMapper->GetClassName(),
+                  _data->volumeMapper->GetLastUsedRenderMode());
+        }
+
+        // Read a corner pixel too (should be background color)
+        unsigned char cornerPixel[4] = {0};
+        glReadPixels(5, 5, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, cornerPixel);
+        NSLog(@"[VTKBridge] PostRender corner pixel: R=%d G=%d B=%d A=%d",
+              cornerPixel[0], cornerPixel[1], cornerPixel[2], cornerPixel[3]);
     }
+#else
+    _data->renderWindow->Render();
+#endif
 }
+
+// Custom blit removed — VTK's BlitToCurrent handles display→GLKView blit natively.
 
 - (void)resizeTo:(CGSize)size {
     if (!_data->renderWindow || size.width <= 0 || size.height <= 0) return;
 
+#if TARGET_OS_IPHONE
+    // Ensure GL context is current
+    [_renderView makeGLContextCurrent];
+
+    // Use retina-aware pixel dimensions for VTK
+    double scale = _renderView.glkView ? _renderView.glkView.contentScaleFactor : 1.0;
+    int w = (int)(size.width * scale);
+    int h = (int)(size.height * scale);
+#else
     int w = (int)size.width;
     int h = (int)size.height;
+#endif
 
     _data->renderWindow->SetSize(w, h);
 
-    // Render first to ensure VTK creates its internal GL view
-    _data->renderWindow->Render();
+    // Render via GLKView on iOS, directly on macOS
+    [self render];
 
-#if !TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
+    // Resize GLKView's drawable if needed
+    if (_renderView.glkView) {
+        _renderView.glkView.frame = _renderView.bounds;
+    }
+#else
     // Now the GL view exists — resize it and set autoresizing so it tracks the parent.
     vtkCocoaRenderWindow *cocoaWin =
         vtkCocoaRenderWindow::SafeDownCast(_data->renderWindow);
