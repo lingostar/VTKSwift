@@ -113,6 +113,7 @@
 		00FD4FB0B6A0A500C37100D2 /* caffeine.pdb */ = {isa = PBXFileReference; path = caffeine.pdb; sourceTree = "<group>"; };
 		027DB5837C3356DB70CDC9BF /* ChartRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartRowView.swift; sourceTree = "<group>"; };
 		076F844309228D7BC9E1DE70 /* ChartrixApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartrixApp.swift; sourceTree = "<group>"; };
+		0830B5F5E94A4F2E23F90582 /* Chartrix.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Chartrix.entitlements; sourceTree = "<group>"; };
 		0986298261C6965AA2EA1256 /* ChartStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartStorage.swift; sourceTree = "<group>"; };
 		09C6889BF870D801E846C1E5 /* MeasureOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasureOverlay.swift; sourceTree = "<group>"; };
 		0C8291E1DB82E461BB708161 /* NotesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesListView.swift; sourceTree = "<group>"; };
@@ -174,6 +175,7 @@
 			isa = PBXGroup;
 			children = (
 				39A18BB5BE3381DA8105663B /* Assets.xcassets */,
+				0830B5F5E94A4F2E23F90582 /* Chartrix.entitlements */,
 				076F844309228D7BC9E1DE70 /* ChartrixApp.swift */,
 				184D22C6B1FF05C2C4A34398 /* ContentView.swift */,
 				201567243D7C51AC323CD8BD /* PrivacyInfo.xcprivacy */,
@@ -722,6 +724,7 @@
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CODE_SIGN_ENTITLEMENTS = Chartrix/Chartrix.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
@@ -816,6 +819,7 @@
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CODE_SIGN_ENTITLEMENTS = Chartrix/Chartrix.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
@@ -948,6 +952,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CODE_SIGN_ENTITLEMENTS = Chartrix/Chartrix.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
@@ -1009,6 +1014,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CODE_SIGN_ENTITLEMENTS = Chartrix/Chartrix.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;

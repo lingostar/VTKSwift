@@ -3,21 +3,25 @@ import SwiftData
 
 struct ContentView: View {
     @State private var selectedChart: Chart?
+    @State private var didMigrate = false
 
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
 
     var body: some View {
-        #if os(macOS)
-        splitView
-        #else
-        if horizontalSizeClass == .regular {
+        Group {
+            #if os(macOS)
             splitView
-        } else {
-            stackView
+            #else
+            if horizontalSizeClass == .regular {
+                splitView
+            } else {
+                stackView
+            }
+            #endif
         }
-        #endif
+        .onAppear { migrateToICloudOnce() }
     }
 
     // MARK: - iPad / Mac: NavigationSplitView
@@ -47,6 +51,15 @@ struct ContentView: View {
                 .navigationDestination(for: Chart.self) { chart in
                     ChartDetailView(chart: chart)
                 }
+        }
+    }
+
+    /// 앱 첫 실행 시 로컬 데이터를 iCloud로 마이그레이션
+    private func migrateToICloudOnce() {
+        guard !didMigrate else { return }
+        didMigrate = true
+        DispatchQueue.global(qos: .utility).async {
+            ChartStorage.migrateLocalToICloudIfNeeded()
         }
     }
 }

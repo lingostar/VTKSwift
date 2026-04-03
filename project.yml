@@ -103,6 +103,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.codershigh.Chartrix
         PRODUCT_NAME: Chartrix
         GENERATE_INFOPLIST_FILE: true
+        CODE_SIGN_ENTITLEMENTS: Chartrix/Chartrix.entitlements
         SWIFT_OBJC_BRIDGING_HEADER: Chartrix/Bridge/Chartrix-Bridging-Header.h
         TARGETED_DEVICE_FAMILY: "1,2"  # iPhone + iPad
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: true
@@ -174,6 +175,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.codershigh.Chartrix
         PRODUCT_NAME: Chartrix
         GENERATE_INFOPLIST_FILE: true
+        CODE_SIGN_ENTITLEMENTS: Chartrix/Chartrix.entitlements
         SWIFT_OBJC_BRIDGING_HEADER: Chartrix/Bridge/Chartrix-Bridging-Header.h
         ARCHS: arm64
         HEADER_SEARCH_PATHS:
