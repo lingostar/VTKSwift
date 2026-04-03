@@ -1,4 +1,4 @@
-# OutChart
+# Chartrix
 
 ### CT/MRI 영상을 3D로, 당신의 손 안에
 
@@ -6,7 +6,7 @@
 
 ## 소개
 
-**OutChart**는 DICOM 의료 영상을 쉽게 열람하고 3D로 시각화하는 Apple 네이티브 앱입니다.
+**Chartrix**는 DICOM 의료 영상을 쉽게 열람하고 3D로 시각화하는 Apple 네이티브 앱입니다.
 CT, MRI, 초음파 영상을 2D 슬라이스로 탐색하고, 실시간 3D 볼륨 렌더링으로 입체적으로 확인하며, AR 지원 USDZ 모델로 내보낼 수 있습니다.
 
 > "참조/열람용(Reference Only)" — 교육, 수술 계획 참고, 환자 설명, 3D 프린팅 모형 제작 용도
@@ -103,7 +103,7 @@ iPhone/iPad에서 AR로 바로 확인하거나, 3D 프린팅용으로 활용할 
 
 ## 규제 전략
 
-OutChart는 **참조/열람용(Reference Only)** 의료 영상 뷰어입니다.
+Chartrix는 **참조/열람용(Reference Only)** 의료 영상 뷰어입니다.
 
 - FDA Class I / 식약처 저등급 분류 대상
 - 임상 진단 기능 완전 배제
@@ -120,4 +120,4 @@ OutChart는 **참조/열람용(Reference Only)** 의료 영상 뷰어입니다.
 
 ---
 
-*OutChart는 AcademyLingo에서 개발하는 오픈소스 프로젝트입니다.*
+*Chartrix는 AcademyLingo에서 개발하는 오픈소스 프로젝트입니다.*

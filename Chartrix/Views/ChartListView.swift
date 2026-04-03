@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// 차트 목록 — OutChart 시작 화면 (iPhone NavigationStack용)
+/// 차트 목록 — Chartrix 시작 화면 (iPhone NavigationStack용)
 struct ChartListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Chart.updatedDate, order: .reverse) private var charts: [Chart]

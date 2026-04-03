@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C155FE7A8AD810DE51E72DAF"
-               BuildableName = "OutChart.app"
-               BlueprintName = "OutChart-macOS"
+               BlueprintIdentifier = "B91B55006FF5BFE7E5083DB2"
+               BuildableName = "Chartrix.app"
+               BlueprintName = "Chartrix-macOS"
                ReferencedContainer = "container:VTKSwift.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -30,9 +30,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C155FE7A8AD810DE51E72DAF"
-            BuildableName = "OutChart.app"
-            BlueprintName = "OutChart-macOS"
+            BlueprintIdentifier = "B91B55006FF5BFE7E5083DB2"
+            BuildableName = "Chartrix.app"
+            BlueprintName = "Chartrix-macOS"
             ReferencedContainer = "container:VTKSwift.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -53,9 +53,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C155FE7A8AD810DE51E72DAF"
-            BuildableName = "OutChart.app"
-            BlueprintName = "OutChart-macOS"
+            BlueprintIdentifier = "B91B55006FF5BFE7E5083DB2"
+            BuildableName = "Chartrix.app"
+            BlueprintName = "Chartrix-macOS"
             ReferencedContainer = "container:VTKSwift.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -70,9 +70,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C155FE7A8AD810DE51E72DAF"
-            BuildableName = "OutChart.app"
-            BlueprintName = "OutChart-macOS"
+            BlueprintIdentifier = "B91B55006FF5BFE7E5083DB2"
+            BuildableName = "Chartrix.app"
+            BlueprintName = "Chartrix-macOS"
             ReferencedContainer = "container:VTKSwift.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

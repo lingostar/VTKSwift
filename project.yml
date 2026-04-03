@@ -86,12 +86,12 @@ targets:
           SWIFT_OPTIMIZATION_LEVEL: "-O"
     dependencies: []
 
-  # ---- OutChart iOS (iPhone + iPad) ----
-  OutChart-iOS:
+  # ---- Chartrix iOS (iPhone + iPad) ----
+  Chartrix-iOS:
     type: application
     platform: iOS
     sources:
-      - path: OutChart
+      - path: Chartrix
         excludes:
           - "**/.DS_Store"
       - path: VTKSwiftApp/Bridge/VTKBridge.h
@@ -100,13 +100,36 @@ targets:
         buildPhase: sources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.developeracademy.OutChart
-        PRODUCT_NAME: OutChart
+        PRODUCT_BUNDLE_IDENTIFIER: com.developeracademy.Chartrix
+        PRODUCT_NAME: Chartrix
         GENERATE_INFOPLIST_FILE: true
-        SWIFT_OBJC_BRIDGING_HEADER: OutChart/Bridge/OutChart-Bridging-Header.h
+        SWIFT_OBJC_BRIDGING_HEADER: Chartrix/Bridge/Chartrix-Bridging-Header.h
         TARGETED_DEVICE_FAMILY: "1,2"  # iPhone + iPad
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: true
         EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
+
+        # --- App Store metadata ---
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_KEY_CFBundleDisplayName: Chartrix
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.medical"
+
+        # --- Supported orientations (all 4 required for iPad multitasking) ---
+        INFOPLIST_KEY_UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+          - UIInterfaceOrientationPortraitUpsideDown
+        INFOPLIST_KEY_UISupportsFullScreen: false
+
+        # --- Export compliance (no custom encryption) ---
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: false
+
+        # --- Privacy usage descriptions (folder picker for DICOM import) ---
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "DICOM 영상 파일을 사진 라이브러리에서 가져올 때 사용합니다."
+        INFOPLIST_KEY_NSDocumentsFolderUsageDescription: "DICOM 데이터를 저장하고 관리합니다."
+
         HEADER_SEARCH_PATHS[sdk=iphoneos*]:
           - "$(PROJECT_DIR)/vtk-install/ios-arm64/include/vtk-9.4"
           - "$(PROJECT_DIR)/VTKSwiftApp/Bridge"
@@ -134,12 +157,12 @@ targets:
           SWIFT_OPTIMIZATION_LEVEL: "-O"
     dependencies: []
 
-  # ---- OutChart macOS ----
-  OutChart-macOS:
+  # ---- Chartrix macOS ----
+  Chartrix-macOS:
     type: application
     platform: macOS
     sources:
-      - path: OutChart
+      - path: Chartrix
         excludes:
           - "**/.DS_Store"
       - path: VTKSwiftApp/Bridge/VTKBridge.h
@@ -148,10 +171,11 @@ targets:
         buildPhase: sources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.developeracademy.OutChart
-        PRODUCT_NAME: OutChart
+        PRODUCT_BUNDLE_IDENTIFIER: com.developeracademy.Chartrix
+        PRODUCT_NAME: Chartrix
         GENERATE_INFOPLIST_FILE: true
-        SWIFT_OBJC_BRIDGING_HEADER: OutChart/Bridge/OutChart-Bridging-Header.h
+        SWIFT_OBJC_BRIDGING_HEADER: Chartrix/Bridge/Chartrix-Bridging-Header.h
+        ARCHS: arm64
         HEADER_SEARCH_PATHS:
           - "$(PROJECT_DIR)/vtk-install/macos-arm64/include/vtk-9.4"
           - "$(PROJECT_DIR)/VTKSwiftApp/Bridge"
@@ -187,15 +211,15 @@ schemes:
         VTKSwiftApp-macOS: all
     run:
       config: Debug
-  OutChart-iOS:
+  Chartrix-iOS:
     build:
       targets:
-        OutChart-iOS: all
+        Chartrix-iOS: all
     run:
       config: Debug
-  OutChart-macOS:
+  Chartrix-macOS:
     build:
       targets:
-        OutChart-macOS: all
+        Chartrix-macOS: all
     run:
       config: Debug

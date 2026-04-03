@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct OutChartApp: App {
+struct ChartrixApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

@@ -11,199 +11,199 @@
 		0109987451E48E5D822BE6D5 /* prepare_dem.py in Resources */ = {isa = PBXBuildFile; fileRef = 49B133044D7DB3413AEEB984 /* prepare_dem.py */; };
 		073E3264D3BAA69385B120AB /* CaseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C6D54F64A183F339E637894 /* CaseDetailView.swift */; };
 		079DE2D24CFB7F5FF3724429 /* ReportRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45ABB931BAD40E9841E81781 /* ReportRecord.swift */; };
-		08D039312385E0A23999CFAC /* USDZGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDEB2EB61F831EADDFFE7292 /* USDZGenerator.swift */; };
+		095AE929353CE3449A0869B0 /* DICOMSliceRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A32CCA01D4EDE38CC74FB70 /* DICOMSliceRenderer.swift */; };
 		0B824DE702F39C1DE5A3CE32 /* VolumeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E113C30DDFE96288847A0B86 /* VolumeView.swift */; };
+		0BFE7B172471FCB52DC8D1A0 /* MeasureOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C6889BF870D801E846C1E5 /* MeasureOverlay.swift */; };
 		16CEA7989B0EB68A93C65D7D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C40889BA447135702AFD62A /* ContentView.swift */; };
+		179B32EEAA994C40899A6028 /* ChartrixApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 076F844309228D7BC9E1DE70 /* ChartrixApp.swift */; };
 		18688165BC1BA02AEC54CE34 /* MeasurementOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 724359AB1081B2719BF1B986 /* MeasurementOverlay.swift */; };
 		18E9898CAC02E0BEDB0BF285 /* CaseRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88FEE4F9D9BB96CA85A82319 /* CaseRecord.swift */; };
 		1A65E31FFC788BE9CB734E5C /* DICOMAnonymizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385E1C1D029CD7887281604F /* DICOMAnonymizer.swift */; };
 		1C6D9A519CE4EC19110884FF /* SphereView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A89E8931748C07173FBF73F2 /* SphereView.swift */; };
-		243449724BB864F5AB753848 /* MeasureOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBBC2E4319ACEFC2C3D6F6D /* MeasureOverlay.swift */; };
+		2074458B1F88EF9E43C25E2D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 39A18BB5BE3381DA8105663B /* Assets.xcassets */; };
+		247FD6E2E00B2B8CEC2B869A /* ChartDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4649D972551D41DBC52994C7 /* ChartDetailView.swift */; };
 		24916EC256A512F9B198BA38 /* CaseListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D89A9067B1F81DDFC593225C /* CaseListView.swift */; };
-		2661833104108A6175E6B442 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B79F4D2AEDE00F6B87BBCF53 /* Assets.xcassets */; };
 		26DB6A1E69ABE6EAF166C8F0 /* CaseListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D89A9067B1F81DDFC593225C /* CaseListView.swift */; };
-		2A93925A57D2EB7B1B103831 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4B2E327131B1A22E8686F9 /* ContentView.swift */; };
+		279587C63294A617B439FF47 /* NewChartSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D3C7E6E734393EF50A0AB8 /* NewChartSheet.swift */; };
 		33D9AF201D0A16F06410F702 /* MolecularView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555D54E32A962D3AAF5B5A60 /* MolecularView.swift */; };
-		35A8486885F4DB94F5D3F38B /* USDZGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDEB2EB61F831EADDFFE7292 /* USDZGenerator.swift */; };
 		37E2A4B31B5B0BCADE04E4DB /* ReportListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 472F3D48F3C3706F1675DC58 /* ReportListView.swift */; };
 		39D45C115644B9615C29B4EC /* pohang_dem_meta.json in Resources */ = {isa = PBXBuildFile; fileRef = E3FF0E7BEC8453E4BF160587 /* pohang_dem_meta.json */; };
+		3CDE319DEC745B611601AC33 /* ChartDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4649D972551D41DBC52994C7 /* ChartDetailView.swift */; };
 		3E1C76B96AE74AD5632E9077 /* DICOMView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A6FFB2A4AB7F14E44EA865D /* DICOMView.swift */; };
-		478F4B2920C08964668B8FDA /* DICOMSliceRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2CE80C688F428C234CE610D /* DICOMSliceRenderer.swift */; };
+		401C2DCFE339AC758872F1D0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 201567243D7C51AC323CD8BD /* PrivacyInfo.xcprivacy */; };
+		42948BEBF2DAB89C4AA6C878 /* DICOMSliceRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A32CCA01D4EDE38CC74FB70 /* DICOMSliceRenderer.swift */; };
+		46298ED59D9A4C73E0A0C559 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 184D22C6B1FF05C2C4A34398 /* ContentView.swift */; };
+		46614FD0F753A9CCBE4E7E68 /* notion-promo-page.md in Resources */ = {isa = PBXBuildFile; fileRef = B9E0BCDA30CA6412896F8412 /* notion-promo-page.md */; };
 		49CB54EE50DDFAFD33200AD5 /* TerrainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3141B27AC2C1C16DFB20A669 /* TerrainView.swift */; };
 		49DA3A220CF31D553135EDCF /* USDZPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61479CAFD4468ED16A32681E /* USDZPreviewView.swift */; };
+		4C22BF80D02FC1CECA71229B /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4D1D835F04990F1C70428B2 /* NoteEditorView.swift */; };
 		4E7FD10B6075F275E22FB15B /* ReportEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4745278F3C420A2CAB1FD78 /* ReportEditorView.swift */; };
-		4F656C23795B643B73D413AB /* ChartListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12F56A5CE2260DB72EB29674 /* ChartListView.swift */; };
+		4FF8D97588BCB9FEBE581572 /* ChartListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDC6E2B67625372D460F3960 /* ChartListView.swift */; };
 		5128ECAC77F0E61B0D340435 /* VTKView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FC449D38889003F026C973A /* VTKView.swift */; };
-		5369E60C42B80DC4B38E6058 /* DICOMMetadataReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 403A139990F4C071CCEFCD67 /* DICOMMetadataReader.swift */; };
 		53C8610A28CBF9736DE28C4B /* MolecularView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555D54E32A962D3AAF5B5A60 /* MolecularView.swift */; };
-		5770EB4A22D0AFD5FA627B2A /* MeasureOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBBC2E4319ACEFC2C3D6F6D /* MeasureOverlay.swift */; };
-		5BC07DB1E9E273B93F3C5FFC /* ChartStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 810ECF9F9B5B75531FDE51E8 /* ChartStorage.swift */; };
-		5D27AC6A3984DBA310CA5579 /* ChartRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F42114DAC4A640F65CD9E3E9 /* ChartRowView.swift */; };
+		53EC3C4C67210A32813B9F11 /* ChartListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDC6E2B67625372D460F3960 /* ChartListView.swift */; };
+		54DC9666BCC8DFD872CD33DE /* ChartStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0986298261C6965AA2EA1256 /* ChartStorage.swift */; };
+		567D042A98E8565C1B9F1514 /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4D1D835F04990F1C70428B2 /* NoteEditorView.swift */; };
+		5D11F615EDC172CAC33B770D /* CTPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687C362BBB9F3D593B80E291 /* CTPreset.swift */; };
+		62A7350F89FC85EC0BF45DDD /* Chart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2483361AA753B4C5162F2CD3 /* Chart.swift */; };
 		6775B8035B8F5FD99A1419F9 /* MeasurementOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 724359AB1081B2719BF1B986 /* MeasurementOverlay.swift */; };
+		695C14D503A4370814319A15 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 201567243D7C51AC323CD8BD /* PrivacyInfo.xcprivacy */; };
 		6CF7075E1C0368EEBFB32EF7 /* CaseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C6D54F64A183F339E637894 /* CaseDetailView.swift */; };
-		6D132B19BA6611C9C2FD7610 /* ChartDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34935454E0EDBDDBDFF185BF /* ChartDetailView.swift */; };
-		73409072D45C4297B72591D1 /* Chart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77487C70B7EC17A7161E4DA5 /* Chart.swift */; };
+		71B4E28DF45178F3CE308E8C /* AddStudySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3020FA0D61B42E036F563D1F /* AddStudySheet.swift */; };
+		74625C25583139FEC6FDE7A7 /* USDZGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A0AC19468C473C4BD78D5A /* USDZGenerator.swift */; };
+		7983EA33B4E6CDA4A10FEF7C /* DICOMMetadataReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C903605FF5391AEAAFCD6A3 /* DICOMMetadataReader.swift */; };
 		7A9D2D720E84CD7E9F824407 /* USDZView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F4E25937C40C127C448716 /* USDZView.swift */; };
+		7AA1906AF4DF79385C6F6730 /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF62C90B0C17606AE00EC790 /* Note.swift */; };
+		7B297DF3F31D1C0B68F9D676 /* VTKBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = FC31EC1FF5D89B785C4114F5 /* VTKBridge.mm */; };
 		7B2B05E6E205E6FF5565E42C /* DICOMView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A6FFB2A4AB7F14E44EA865D /* DICOMView.swift */; };
-		7C68489B2F5F7D7251E7EE4A /* AddStudySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA25118327D56FF062DC87E5 /* AddStudySheet.swift */; };
 		7E6B6F9A43ADE799B7786E91 /* pohang_dem.raw in Resources */ = {isa = PBXBuildFile; fileRef = 1DB451F382FF38AEC94820BA /* pohang_dem.raw */; };
 		80C2FB7A526174201DCECA12 /* prepare_dem.py in Resources */ = {isa = PBXBuildFile; fileRef = 49B133044D7DB3413AEEB984 /* prepare_dem.py */; };
+		83CE26BCBC4A3B242DB0E0EE /* MeasureOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C6889BF870D801E846C1E5 /* MeasureOverlay.swift */; };
+		86CC4324D3F8C5C92CEF2872 /* VTKBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = FC31EC1FF5D89B785C4114F5 /* VTKBridge.mm */; };
+		86DD87CB046DC7FD916D6D75 /* DICOMMetadataReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C903605FF5391AEAAFCD6A3 /* DICOMMetadataReader.swift */; };
 		888CC37D1B93A93DBA45F672 /* caffeine.pdb in Resources */ = {isa = PBXBuildFile; fileRef = 00FD4FB0B6A0A500C37100D2 /* caffeine.pdb */; };
-		89335F7AA752173214AC2C43 /* ChartRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F42114DAC4A640F65CD9E3E9 /* ChartRowView.swift */; };
-		8D83C18E06BD2BC1822B907A /* CTPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20BB2E7FC0D12CF9C89AED0D /* CTPreset.swift */; };
+		8D97AC348CAFC44EC2AB4C04 /* Measurement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7229CFDEEAD967AE405E90D0 /* Measurement.swift */; };
+		8F76E9E3A48AD06734930333 /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF62C90B0C17606AE00EC790 /* Note.swift */; };
+		913A8EE2596B54682587B0DC /* CTPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687C362BBB9F3D593B80E291 /* CTPreset.swift */; };
 		93112C7D7FEDF62B8D5C6AA9 /* DICOMAnonymizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385E1C1D029CD7887281604F /* DICOMAnonymizer.swift */; };
-		93C503A4F9F8F330A1F9C72E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B79F4D2AEDE00F6B87BBCF53 /* Assets.xcassets */; };
 		957A1EE8EBFCB9FB5EBC824A /* DICOMSRWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100E09C1150FC423D829DD98 /* DICOMSRWriter.swift */; };
-		95C5FA772E5D9E17F1660072 /* OutChartApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2057B2DD50003B4D8BD311D5 /* OutChartApp.swift */; };
 		9822E192084FB2EE9257347A /* VTKSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E2D26E5627F3AD09ABF9AC9 /* VTKSwiftApp.swift */; };
+		995476A102632C19377D18E6 /* USDZGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A0AC19468C473C4BD78D5A /* USDZGenerator.swift */; };
 		9C3EE835A97715E283A5C3F1 /* VTKBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = FC31EC1FF5D89B785C4114F5 /* VTKBridge.mm */; };
 		A23F11B0BFC7B3C4A45EFA1E /* VTKView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FC449D38889003F026C973A /* VTKView.swift */; };
 		A723EE8E6E50FF66DAFC1393 /* DICOMSRWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100E09C1150FC423D829DD98 /* DICOMSRWriter.swift */; };
-		A7C2A39442F3BEEA0F49EDE8 /* CTPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20BB2E7FC0D12CF9C89AED0D /* CTPreset.swift */; };
+		AE9BB105EC1107545E7B2D20 /* NotesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8291E1DB82E461BB708161 /* NotesListView.swift */; };
+		AF5F8E6FC97B181F6A40B533 /* ChartrixApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 076F844309228D7BC9E1DE70 /* ChartrixApp.swift */; };
 		AFBDF97D284361D79177C787 /* ReportRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45ABB931BAD40E9841E81781 /* ReportRecord.swift */; };
-		B1F3FAF9C19B83AF07839478 /* VTKBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = FC31EC1FF5D89B785C4114F5 /* VTKBridge.mm */; };
-		B561BB6F0B80395D24088917 /* ChartListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12F56A5CE2260DB72EB29674 /* ChartListView.swift */; };
 		B974816AF8D8ACF125462B9B /* DICOMTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91FC7C3B43D36CB107149D3E /* DICOMTag.swift */; };
 		BA046B237C89DC159BADD935 /* VTKSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E2D26E5627F3AD09ABF9AC9 /* VTKSwiftApp.swift */; };
+		BAD033519EFDB06DAEA98D15 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 39A18BB5BE3381DA8105663B /* Assets.xcassets */; };
 		C0BC7CFE223BD9F29920E4A9 /* VTKBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = FC31EC1FF5D89B785C4114F5 /* VTKBridge.mm */; };
-		C1C6FC750936E68E5F2B34E5 /* DICOMSliceRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2CE80C688F428C234CE610D /* DICOMSliceRenderer.swift */; };
 		C1C9DCA8BA7D9016B1A06772 /* SphereView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A89E8931748C07173FBF73F2 /* SphereView.swift */; };
-		C3E908A90499DD6906FD841C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4B2E327131B1A22E8686F9 /* ContentView.swift */; };
-		C7271A2BF3B546D4FE216219 /* NewChartSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21B4EB23E254CA9085C71879 /* NewChartSheet.swift */; };
-		C7D9388354AD4A38086C66FD /* AddStudySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA25118327D56FF062DC87E5 /* AddStudySheet.swift */; };
-		CB4547F99AF9024A3D437510 /* VTKBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = FC31EC1FF5D89B785C4114F5 /* VTKBridge.mm */; };
+		C67661A2A3D0D2DE3822D878 /* Chart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2483361AA753B4C5162F2CD3 /* Chart.swift */; };
+		C8B8710E99B16E2C90C835C3 /* ChartRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 027DB5837C3356DB70CDC9BF /* ChartRowView.swift */; };
 		CED2A8CC3EBE87014B98F54E /* pohang_dem.raw in Resources */ = {isa = PBXBuildFile; fileRef = 1DB451F382FF38AEC94820BA /* pohang_dem.raw */; };
 		D158CB7C3B5389FD8223C5EA /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1273CA7E7311927030EE2A94 /* ExportView.swift */; };
+		D187FAF3916AF83CC795DCCD /* NewChartSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D3C7E6E734393EF50A0AB8 /* NewChartSheet.swift */; };
 		D2E59709EFEA31FCE0DE3EAF /* USDZPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61479CAFD4468ED16A32681E /* USDZPreviewView.swift */; };
 		D34C827A5755361E1D2CA7A5 /* SRTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69252C5967B8083545B31240 /* SRTemplate.swift */; };
 		D38C5E127A5FC40C9701FD73 /* caffeine.pdb in Resources */ = {isa = PBXBuildFile; fileRef = 00FD4FB0B6A0A500C37100D2 /* caffeine.pdb */; };
 		D571DF8EE7FDDDF52D982C9E /* VolumeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E113C30DDFE96288847A0B86 /* VolumeView.swift */; };
-		D84B77FFBE5F38696A06453E /* ChartStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 810ECF9F9B5B75531FDE51E8 /* ChartStorage.swift */; };
-		DC34F9D90EB60A7AB0E14BCE /* Chart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77487C70B7EC17A7161E4DA5 /* Chart.swift */; };
+		D96A43EA4BB35C357DE021C2 /* NotesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8291E1DB82E461BB708161 /* NotesListView.swift */; };
+		DC0793CA846B41C270BDCD00 /* AddStudySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3020FA0D61B42E036F563D1F /* AddStudySheet.swift */; };
 		DC7FCF12F295734363FEE830 /* DICOMTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91FC7C3B43D36CB107149D3E /* DICOMTag.swift */; };
+		DD12332CBEF8BF9D224D11D9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 184D22C6B1FF05C2C4A34398 /* ContentView.swift */; };
+		DD5AFC847C065D0F027A6340 /* Measurement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7229CFDEEAD967AE405E90D0 /* Measurement.swift */; };
+		DD79BA2434C308C59F04E0C5 /* ChartStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0986298261C6965AA2EA1256 /* ChartStorage.swift */; };
 		DD9CDD6BC27D861FF2B20DFD /* ReportListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 472F3D48F3C3706F1675DC58 /* ReportListView.swift */; };
-		EF367ADE681DE244395B5A53 /* DICOMMetadataReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 403A139990F4C071CCEFCD67 /* DICOMMetadataReader.swift */; };
+		E7D1BE04CD8F587EFDFD1F3A /* notion-promo-page.md in Resources */ = {isa = PBXBuildFile; fileRef = B9E0BCDA30CA6412896F8412 /* notion-promo-page.md */; };
 		EF9B6353668BF07065A777F6 /* ReportEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4745278F3C420A2CAB1FD78 /* ReportEditorView.swift */; };
-		F0D9D976251B46812AA0BA5D /* ChartDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34935454E0EDBDDBDFF185BF /* ChartDetailView.swift */; };
 		F101C71BD97D853E1DBB2298 /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1273CA7E7311927030EE2A94 /* ExportView.swift */; };
+		F21AE8F3542F28C1278CB109 /* ChartRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 027DB5837C3356DB70CDC9BF /* ChartRowView.swift */; };
 		F3B3446AA0F8DC6C04E5357A /* CaseRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88FEE4F9D9BB96CA85A82319 /* CaseRecord.swift */; };
-		F3F4D6DDD31926EA3D979F86 /* NewChartSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21B4EB23E254CA9085C71879 /* NewChartSheet.swift */; };
-		F59AAB6594D1A0551E8C629A /* OutChartApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2057B2DD50003B4D8BD311D5 /* OutChartApp.swift */; };
 		F99A85AD91DB8F7F4AC0AC26 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C40889BA447135702AFD62A /* ContentView.swift */; };
 		F9FF23ABFAB567FB92C9506B /* SRTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69252C5967B8083545B31240 /* SRTemplate.swift */; };
 		FBAE0B800B6EAB0FA9A85BDE /* pohang_dem_meta.json in Resources */ = {isa = PBXBuildFile; fileRef = E3FF0E7BEC8453E4BF160587 /* pohang_dem_meta.json */; };
 		FBF910D0589716845382EECA /* TerrainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3141B27AC2C1C16DFB20A669 /* TerrainView.swift */; };
-		AA11111111111111AAAA0001 /* Measurement.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22222222222222AAAA0001 /* Measurement.swift */; };
-		AA11111111111111AAAA0002 /* Measurement.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22222222222222AAAA0001 /* Measurement.swift */; };
-		AA11111111111111AAAA0003 /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22222222222222AAAA0002 /* Note.swift */; };
-		AA11111111111111AAAA0004 /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22222222222222AAAA0002 /* Note.swift */; };
-		AA11111111111111AAAA0005 /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22222222222222AAAA0003 /* NoteEditorView.swift */; };
-		AA11111111111111AAAA0006 /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22222222222222AAAA0003 /* NoteEditorView.swift */; };
-		AA11111111111111AAAA0007 /* NotesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22222222222222AAAA0004 /* NotesListView.swift */; };
-		AA11111111111111AAAA0008 /* NotesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22222222222222AAAA0004 /* NotesListView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		00FD4FB0B6A0A500C37100D2 /* caffeine.pdb */ = {isa = PBXFileReference; path = caffeine.pdb; sourceTree = "<group>"; };
-		0EBBC2E4319ACEFC2C3D6F6D /* MeasureOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasureOverlay.swift; sourceTree = "<group>"; };
+		027DB5837C3356DB70CDC9BF /* ChartRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartRowView.swift; sourceTree = "<group>"; };
+		076F844309228D7BC9E1DE70 /* ChartrixApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartrixApp.swift; sourceTree = "<group>"; };
+		0986298261C6965AA2EA1256 /* ChartStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartStorage.swift; sourceTree = "<group>"; };
+		09C6889BF870D801E846C1E5 /* MeasureOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasureOverlay.swift; sourceTree = "<group>"; };
+		0C8291E1DB82E461BB708161 /* NotesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesListView.swift; sourceTree = "<group>"; };
+		0C903605FF5391AEAAFCD6A3 /* DICOMMetadataReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMMetadataReader.swift; sourceTree = "<group>"; };
 		100E09C1150FC423D829DD98 /* DICOMSRWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMSRWriter.swift; sourceTree = "<group>"; };
 		1273CA7E7311927030EE2A94 /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
-		12F56A5CE2260DB72EB29674 /* ChartListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartListView.swift; sourceTree = "<group>"; };
+		184D22C6B1FF05C2C4A34398 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1DB451F382FF38AEC94820BA /* pohang_dem.raw */ = {isa = PBXFileReference; path = pohang_dem.raw; sourceTree = "<group>"; };
-		2057B2DD50003B4D8BD311D5 /* OutChartApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutChartApp.swift; sourceTree = "<group>"; };
-		20BB2E7FC0D12CF9C89AED0D /* CTPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CTPreset.swift; sourceTree = "<group>"; };
-		21B4EB23E254CA9085C71879 /* NewChartSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChartSheet.swift; sourceTree = "<group>"; };
+		201567243D7C51AC323CD8BD /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		2483361AA753B4C5162F2CD3 /* Chart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chart.swift; sourceTree = "<group>"; };
+		2936CFD85CF68339FC3C381F /* Chartrix-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Chartrix-Bridging-Header.h"; sourceTree = "<group>"; };
 		2A6FFB2A4AB7F14E44EA865D /* DICOMView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMView.swift; sourceTree = "<group>"; };
 		2AF92C9EDC2E7085F204D677 /* VTKBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VTKBridge.h; sourceTree = "<group>"; };
+		3020FA0D61B42E036F563D1F /* AddStudySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddStudySheet.swift; sourceTree = "<group>"; };
 		3141B27AC2C1C16DFB20A669 /* TerrainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerrainView.swift; sourceTree = "<group>"; };
-		34935454E0EDBDDBDFF185BF /* ChartDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartDetailView.swift; sourceTree = "<group>"; };
+		35D3C7E6E734393EF50A0AB8 /* NewChartSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChartSheet.swift; sourceTree = "<group>"; };
 		385E1C1D029CD7887281604F /* DICOMAnonymizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMAnonymizer.swift; sourceTree = "<group>"; };
+		39A18BB5BE3381DA8105663B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3C84313BE9DC918FD03B3F33 /* Chartrix-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Chartrix-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2D26E5627F3AD09ABF9AC9 /* VTKSwiftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VTKSwiftApp.swift; sourceTree = "<group>"; };
-		403A139990F4C071CCEFCD67 /* DICOMMetadataReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMMetadataReader.swift; sourceTree = "<group>"; };
 		45ABB931BAD40E9841E81781 /* ReportRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportRecord.swift; sourceTree = "<group>"; };
+		4649D972551D41DBC52994C7 /* ChartDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartDetailView.swift; sourceTree = "<group>"; };
 		472F3D48F3C3706F1675DC58 /* ReportListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportListView.swift; sourceTree = "<group>"; };
 		47827CA04ACE6B5C594B22D3 /* VTKSwiftApp-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "VTKSwiftApp-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		49B133044D7DB3413AEEB984 /* prepare_dem.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = prepare_dem.py; sourceTree = "<group>"; };
 		4C40889BA447135702AFD62A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		555D54E32A962D3AAF5B5A60 /* MolecularView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MolecularView.swift; sourceTree = "<group>"; };
-		55CC498F2CDC4EAA1104B5C3 /* OutChart-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "OutChart-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		61479CAFD4468ED16A32681E /* USDZPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USDZPreviewView.swift; sourceTree = "<group>"; };
+		63A0AC19468C473C4BD78D5A /* USDZGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USDZGenerator.swift; sourceTree = "<group>"; };
+		687C362BBB9F3D593B80E291 /* CTPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CTPreset.swift; sourceTree = "<group>"; };
 		69252C5967B8083545B31240 /* SRTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTemplate.swift; sourceTree = "<group>"; };
-		6C1EA24820A7A599A9BF5FCC /* OutChart-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "OutChart-Bridging-Header.h"; sourceTree = "<group>"; };
+		6A32CCA01D4EDE38CC74FB70 /* DICOMSliceRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMSliceRenderer.swift; sourceTree = "<group>"; };
+		7229CFDEEAD967AE405E90D0 /* Measurement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Measurement.swift; sourceTree = "<group>"; };
 		724359AB1081B2719BF1B986 /* MeasurementOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementOverlay.swift; sourceTree = "<group>"; };
-		77487C70B7EC17A7161E4DA5 /* Chart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chart.swift; sourceTree = "<group>"; };
 		7FC449D38889003F026C973A /* VTKView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VTKView.swift; sourceTree = "<group>"; };
-		810ECF9F9B5B75531FDE51E8 /* ChartStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartStorage.swift; sourceTree = "<group>"; };
 		853A05FD6E57156515EAF9D3 /* VTKSwiftApp-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "VTKSwiftApp-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		885CC104AFA253C78174B6D0 /* VTKSwiftApp-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "VTKSwiftApp-Bridging-Header.h"; sourceTree = "<group>"; };
 		88FEE4F9D9BB96CA85A82319 /* CaseRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseRecord.swift; sourceTree = "<group>"; };
+		914778D0334F877F8EE50F3D /* Chartrix-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "Chartrix-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		91FC7C3B43D36CB107149D3E /* DICOMTag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMTag.swift; sourceTree = "<group>"; };
 		9C6D54F64A183F339E637894 /* CaseDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseDetailView.swift; sourceTree = "<group>"; };
 		A5F4E25937C40C127C448716 /* USDZView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USDZView.swift; sourceTree = "<group>"; };
 		A89E8931748C07173FBF73F2 /* SphereView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SphereView.swift; sourceTree = "<group>"; };
-		B79F4D2AEDE00F6B87BBCF53 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		BA25118327D56FF062DC87E5 /* AddStudySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddStudySheet.swift; sourceTree = "<group>"; };
+		B9E0BCDA30CA6412896F8412 /* notion-promo-page.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "notion-promo-page.md"; sourceTree = "<group>"; };
 		C4745278F3C420A2CAB1FD78 /* ReportEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportEditorView.swift; sourceTree = "<group>"; };
-		D2CE80C688F428C234CE610D /* DICOMSliceRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMSliceRenderer.swift; sourceTree = "<group>"; };
-		D59483CC7F5E25C885B234DD /* OutChart-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "OutChart-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D89A9067B1F81DDFC593225C /* CaseListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseListView.swift; sourceTree = "<group>"; };
+		DDC6E2B67625372D460F3960 /* ChartListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartListView.swift; sourceTree = "<group>"; };
+		DF62C90B0C17606AE00EC790 /* Note.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
 		E113C30DDFE96288847A0B86 /* VolumeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeView.swift; sourceTree = "<group>"; };
 		E3FF0E7BEC8453E4BF160587 /* pohang_dem_meta.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = pohang_dem_meta.json; sourceTree = "<group>"; };
 		F3478CBE2C183A411837EFC8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		F42114DAC4A640F65CD9E3E9 /* ChartRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartRowView.swift; sourceTree = "<group>"; };
+		F4D1D835F04990F1C70428B2 /* NoteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditorView.swift; sourceTree = "<group>"; };
 		FC31EC1FF5D89B785C4114F5 /* VTKBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = VTKBridge.mm; sourceTree = "<group>"; };
-		FDEB2EB61F831EADDFFE7292 /* USDZGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USDZGenerator.swift; sourceTree = "<group>"; };
-		FE4B2E327131B1A22E8686F9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		AA22222222222222AAAA0001 /* Measurement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Measurement.swift; sourceTree = "<group>"; };
-		AA22222222222222AAAA0002 /* Note.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
-		AA22222222222222AAAA0003 /* NoteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditorView.swift; sourceTree = "<group>"; };
-		AA22222222222222AAAA0004 /* NotesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesListView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
-		0E69E7903553000A0190E928 /* Models */ = {
+		118CCA748FDBFC09C90E30BA /* Chartrix */ = {
 			isa = PBXGroup;
 			children = (
-				77487C70B7EC17A7161E4DA5 /* Chart.swift */,
-				810ECF9F9B5B75531FDE51E8 /* ChartStorage.swift */,
-				20BB2E7FC0D12CF9C89AED0D /* CTPreset.swift */,
-				403A139990F4C071CCEFCD67 /* DICOMMetadataReader.swift */,
-				D2CE80C688F428C234CE610D /* DICOMSliceRenderer.swift */,
-				AA22222222222222AAAA0001 /* Measurement.swift */,
-				AA22222222222222AAAA0002 /* Note.swift */,
-				FDEB2EB61F831EADDFFE7292 /* USDZGenerator.swift */,
+				39A18BB5BE3381DA8105663B /* Assets.xcassets */,
+				076F844309228D7BC9E1DE70 /* ChartrixApp.swift */,
+				184D22C6B1FF05C2C4A34398 /* ContentView.swift */,
+				201567243D7C51AC323CD8BD /* PrivacyInfo.xcprivacy */,
+				38EA84B67275B8A1B6CE29B6 /* Bridge */,
+				66B9C984AECA0DDDBBE2DDDD /* docs */,
+				226FA31144DEF2ABD5D5AD36 /* Models */,
+				D6CD41E5881ABB974586F302 /* Views */,
 			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		1584A141A50C5BB26C7143CA /* OutChart */ = {
-			isa = PBXGroup;
-			children = (
-				B79F4D2AEDE00F6B87BBCF53 /* Assets.xcassets */,
-				FE4B2E327131B1A22E8686F9 /* ContentView.swift */,
-				2057B2DD50003B4D8BD311D5 /* OutChartApp.swift */,
-				190D3A192ADE79842E17258B /* Bridge */,
-				0E69E7903553000A0190E928 /* Models */,
-				BE3C852A450948343EC44ADE /* Views */,
-			);
-			path = OutChart;
+			path = Chartrix;
 			sourceTree = "<group>";
 		};
 		18D3CCC71EB00EB71A4FB537 = {
 			isa = PBXGroup;
 			children = (
-				1584A141A50C5BB26C7143CA /* OutChart */,
+				118CCA748FDBFC09C90E30BA /* Chartrix */,
 				B0EFF874D307BD19D53945BC /* VTKSwiftApp */,
 				7B06F92682CCD808F7043E6F /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		190D3A192ADE79842E17258B /* Bridge */ = {
+		226FA31144DEF2ABD5D5AD36 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				6C1EA24820A7A599A9BF5FCC /* OutChart-Bridging-Header.h */,
+				2483361AA753B4C5162F2CD3 /* Chart.swift */,
+				0986298261C6965AA2EA1256 /* ChartStorage.swift */,
+				687C362BBB9F3D593B80E291 /* CTPreset.swift */,
+				0C903605FF5391AEAAFCD6A3 /* DICOMMetadataReader.swift */,
+				6A32CCA01D4EDE38CC74FB70 /* DICOMSliceRenderer.swift */,
+				7229CFDEEAD967AE405E90D0 /* Measurement.swift */,
+				DF62C90B0C17606AE00EC790 /* Note.swift */,
+				63A0AC19468C473C4BD78D5A /* USDZGenerator.swift */,
 			);
-			path = Bridge;
+			path = Models;
 			sourceTree = "<group>";
 		};
 		235746B11FC7C26E3C6AADA3 /* Bridge */ = {
@@ -216,11 +216,27 @@
 			path = Bridge;
 			sourceTree = "<group>";
 		};
+		38EA84B67275B8A1B6CE29B6 /* Bridge */ = {
+			isa = PBXGroup;
+			children = (
+				2936CFD85CF68339FC3C381F /* Chartrix-Bridging-Header.h */,
+			);
+			path = Bridge;
+			sourceTree = "<group>";
+		};
+		66B9C984AECA0DDDBBE2DDDD /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				B9E0BCDA30CA6412896F8412 /* notion-promo-page.md */,
+			);
+			path = docs;
+			sourceTree = "<group>";
+		};
 		7B06F92682CCD808F7043E6F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				55CC498F2CDC4EAA1104B5C3 /* OutChart-iOS.app */,
-				D59483CC7F5E25C885B234DD /* OutChart-macOS.app */,
+				914778D0334F877F8EE50F3D /* Chartrix-iOS.app */,
+				3C84313BE9DC918FD03B3F33 /* Chartrix-macOS.app */,
 				853A05FD6E57156515EAF9D3 /* VTKSwiftApp-iOS.app */,
 				47827CA04ACE6B5C594B22D3 /* VTKSwiftApp-macOS.app */,
 			);
@@ -273,17 +289,17 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		BE3C852A450948343EC44ADE /* Views */ = {
+		D6CD41E5881ABB974586F302 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				BA25118327D56FF062DC87E5 /* AddStudySheet.swift */,
-				34935454E0EDBDDBDFF185BF /* ChartDetailView.swift */,
-				12F56A5CE2260DB72EB29674 /* ChartListView.swift */,
-				F42114DAC4A640F65CD9E3E9 /* ChartRowView.swift */,
-				0EBBC2E4319ACEFC2C3D6F6D /* MeasureOverlay.swift */,
-				21B4EB23E254CA9085C71879 /* NewChartSheet.swift */,
-				AA22222222222222AAAA0003 /* NoteEditorView.swift */,
-				AA22222222222222AAAA0004 /* NotesListView.swift */,
+				3020FA0D61B42E036F563D1F /* AddStudySheet.swift */,
+				4649D972551D41DBC52994C7 /* ChartDetailView.swift */,
+				DDC6E2B67625372D460F3960 /* ChartListView.swift */,
+				027DB5837C3356DB70CDC9BF /* ChartRowView.swift */,
+				09C6889BF870D801E846C1E5 /* MeasureOverlay.swift */,
+				35D3C7E6E734393EF50A0AB8 /* NewChartSheet.swift */,
+				F4D1D835F04990F1C70428B2 /* NoteEditorView.swift */,
+				0C8291E1DB82E461BB708161 /* NotesListView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -322,22 +338,22 @@
 			productReference = 853A05FD6E57156515EAF9D3 /* VTKSwiftApp-iOS.app */;
 			productType = "com.apple.product-type.application";
 		};
-		8DE172D66A5C927CA1DF8FCA /* OutChart-iOS */ = {
+		4C1827ED9018A1D4667358C8 /* Chartrix-iOS */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 24959C1CF2A365DC2C20D15B /* Build configuration list for PBXNativeTarget "OutChart-iOS" */;
+			buildConfigurationList = F59D24CE9C35546C4D08E4EE /* Build configuration list for PBXNativeTarget "Chartrix-iOS" */;
 			buildPhases = (
-				50D41F0438D87DC53317A8E0 /* Sources */,
-				02AB157A591B4A2CD22E0A12 /* Resources */,
+				F965D91BEDEBFE1CCE03D91B /* Sources */,
+				EB248E5AE594BD853C754F4E /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = "OutChart-iOS";
+			name = "Chartrix-iOS";
 			packageProductDependencies = (
 			);
-			productName = "OutChart-iOS";
-			productReference = 55CC498F2CDC4EAA1104B5C3 /* OutChart-iOS.app */;
+			productName = "Chartrix-iOS";
+			productReference = 914778D0334F877F8EE50F3D /* Chartrix-iOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 		9DB5E511F82CBD2FC23E325C /* VTKSwiftApp-macOS */ = {
@@ -358,22 +374,22 @@
 			productReference = 47827CA04ACE6B5C594B22D3 /* VTKSwiftApp-macOS.app */;
 			productType = "com.apple.product-type.application";
 		};
-		C155FE7A8AD810DE51E72DAF /* OutChart-macOS */ = {
+		B91B55006FF5BFE7E5083DB2 /* Chartrix-macOS */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A3A512F8E73AB194C793E668 /* Build configuration list for PBXNativeTarget "OutChart-macOS" */;
+			buildConfigurationList = 7EE39D9188ECE3EDF378F845 /* Build configuration list for PBXNativeTarget "Chartrix-macOS" */;
 			buildPhases = (
-				046791311CBB0AEDB63D6E26 /* Sources */,
-				7D0DD2FFBD95E1DE80FAAF4A /* Resources */,
+				21F80C6635D86EEEFE4969C5 /* Sources */,
+				5857635AD65C5C0A64F4EA78 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = "OutChart-macOS";
+			name = "Chartrix-macOS";
 			packageProductDependencies = (
 			);
-			productName = "OutChart-macOS";
-			productReference = D59483CC7F5E25C885B234DD /* OutChart-macOS.app */;
+			productName = "Chartrix-macOS";
+			productReference = 3C84313BE9DC918FD03B3F33 /* Chartrix-macOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -388,13 +404,13 @@
 					27570CBA31B8271BF6755F76 = {
 						DevelopmentTeam = 4QG3GC35LA;
 					};
-					8DE172D66A5C927CA1DF8FCA = {
+					4C1827ED9018A1D4667358C8 = {
 						DevelopmentTeam = 4QG3GC35LA;
 					};
 					9DB5E511F82CBD2FC23E325C = {
 						DevelopmentTeam = 4QG3GC35LA;
 					};
-					C155FE7A8AD810DE51E72DAF = {
+					B91B55006FF5BFE7E5083DB2 = {
 						DevelopmentTeam = 4QG3GC35LA;
 					};
 				};
@@ -413,8 +429,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8DE172D66A5C927CA1DF8FCA /* OutChart-iOS */,
-				C155FE7A8AD810DE51E72DAF /* OutChart-macOS */,
+				4C1827ED9018A1D4667358C8 /* Chartrix-iOS */,
+				B91B55006FF5BFE7E5083DB2 /* Chartrix-macOS */,
 				27570CBA31B8271BF6755F76 /* VTKSwiftApp-iOS */,
 				9DB5E511F82CBD2FC23E325C /* VTKSwiftApp-macOS */,
 			);
@@ -422,14 +438,6 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		02AB157A591B4A2CD22E0A12 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				2661833104108A6175E6B442 /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		4D6A5163E91716D71C7504DC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -441,11 +449,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		7D0DD2FFBD95E1DE80FAAF4A /* Resources */ = {
+		5857635AD65C5C0A64F4EA78 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				93C503A4F9F8F330A1F9C72E /* Assets.xcassets in Resources */,
+				BAD033519EFDB06DAEA98D15 /* Assets.xcassets in Resources */,
+				401C2DCFE339AC758872F1D0 /* PrivacyInfo.xcprivacy in Resources */,
+				E7D1BE04CD8F587EFDFD1F3A /* notion-promo-page.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -460,58 +470,42 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-/* End PBXResourcesBuildPhase section */
-
-/* Begin PBXSourcesBuildPhase section */
-		046791311CBB0AEDB63D6E26 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
+		EB248E5AE594BD853C754F4E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C7D9388354AD4A38086C66FD /* AddStudySheet.swift in Sources */,
-				8D83C18E06BD2BC1822B907A /* CTPreset.swift in Sources */,
-				DC34F9D90EB60A7AB0E14BCE /* Chart.swift in Sources */,
-				6D132B19BA6611C9C2FD7610 /* ChartDetailView.swift in Sources */,
-				B561BB6F0B80395D24088917 /* ChartListView.swift in Sources */,
-				89335F7AA752173214AC2C43 /* ChartRowView.swift in Sources */,
-				D84B77FFBE5F38696A06453E /* ChartStorage.swift in Sources */,
-				C3E908A90499DD6906FD841C /* ContentView.swift in Sources */,
-				EF367ADE681DE244395B5A53 /* DICOMMetadataReader.swift in Sources */,
-				C1C6FC750936E68E5F2B34E5 /* DICOMSliceRenderer.swift in Sources */,
-				5770EB4A22D0AFD5FA627B2A /* MeasureOverlay.swift in Sources */,
-				AA11111111111111AAAA0001 /* Measurement.swift in Sources */,
-				F3F4D6DDD31926EA3D979F86 /* NewChartSheet.swift in Sources */,
-				AA11111111111111AAAA0003 /* Note.swift in Sources */,
-				AA11111111111111AAAA0005 /* NoteEditorView.swift in Sources */,
-				AA11111111111111AAAA0007 /* NotesListView.swift in Sources */,
-				95C5FA772E5D9E17F1660072 /* OutChartApp.swift in Sources */,
-				08D039312385E0A23999CFAC /* USDZGenerator.swift in Sources */,
-				CB4547F99AF9024A3D437510 /* VTKBridge.mm in Sources */,
+				2074458B1F88EF9E43C25E2D /* Assets.xcassets in Resources */,
+				695C14D503A4370814319A15 /* PrivacyInfo.xcprivacy in Resources */,
+				46614FD0F753A9CCBE4E7E68 /* notion-promo-page.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		50D41F0438D87DC53317A8E0 /* Sources */ = {
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		21F80C6635D86EEEFE4969C5 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7C68489B2F5F7D7251E7EE4A /* AddStudySheet.swift in Sources */,
-				A7C2A39442F3BEEA0F49EDE8 /* CTPreset.swift in Sources */,
-				73409072D45C4297B72591D1 /* Chart.swift in Sources */,
-				F0D9D976251B46812AA0BA5D /* ChartDetailView.swift in Sources */,
-				4F656C23795B643B73D413AB /* ChartListView.swift in Sources */,
-				5D27AC6A3984DBA310CA5579 /* ChartRowView.swift in Sources */,
-				5BC07DB1E9E273B93F3C5FFC /* ChartStorage.swift in Sources */,
-				2A93925A57D2EB7B1B103831 /* ContentView.swift in Sources */,
-				5369E60C42B80DC4B38E6058 /* DICOMMetadataReader.swift in Sources */,
-				478F4B2920C08964668B8FDA /* DICOMSliceRenderer.swift in Sources */,
-				243449724BB864F5AB753848 /* MeasureOverlay.swift in Sources */,
-				AA11111111111111AAAA0002 /* Measurement.swift in Sources */,
-				C7271A2BF3B546D4FE216219 /* NewChartSheet.swift in Sources */,
-				AA11111111111111AAAA0004 /* Note.swift in Sources */,
-				AA11111111111111AAAA0006 /* NoteEditorView.swift in Sources */,
-				AA11111111111111AAAA0008 /* NotesListView.swift in Sources */,
-				F59AAB6594D1A0551E8C629A /* OutChartApp.swift in Sources */,
-				35A8486885F4DB94F5D3F38B /* USDZGenerator.swift in Sources */,
-				B1F3FAF9C19B83AF07839478 /* VTKBridge.mm in Sources */,
+				DC0793CA846B41C270BDCD00 /* AddStudySheet.swift in Sources */,
+				5D11F615EDC172CAC33B770D /* CTPreset.swift in Sources */,
+				62A7350F89FC85EC0BF45DDD /* Chart.swift in Sources */,
+				247FD6E2E00B2B8CEC2B869A /* ChartDetailView.swift in Sources */,
+				4FF8D97588BCB9FEBE581572 /* ChartListView.swift in Sources */,
+				C8B8710E99B16E2C90C835C3 /* ChartRowView.swift in Sources */,
+				DD79BA2434C308C59F04E0C5 /* ChartStorage.swift in Sources */,
+				AF5F8E6FC97B181F6A40B533 /* ChartrixApp.swift in Sources */,
+				46298ED59D9A4C73E0A0C559 /* ContentView.swift in Sources */,
+				7983EA33B4E6CDA4A10FEF7C /* DICOMMetadataReader.swift in Sources */,
+				42948BEBF2DAB89C4AA6C878 /* DICOMSliceRenderer.swift in Sources */,
+				0BFE7B172471FCB52DC8D1A0 /* MeasureOverlay.swift in Sources */,
+				8D97AC348CAFC44EC2AB4C04 /* Measurement.swift in Sources */,
+				D187FAF3916AF83CC795DCCD /* NewChartSheet.swift in Sources */,
+				8F76E9E3A48AD06734930333 /* Note.swift in Sources */,
+				567D042A98E8565C1B9F1514 /* NoteEditorView.swift in Sources */,
+				AE9BB105EC1107545E7B2D20 /* NotesListView.swift in Sources */,
+				74625C25583139FEC6FDE7A7 /* USDZGenerator.swift in Sources */,
+				86CC4324D3F8C5C92CEF2872 /* VTKBridge.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -575,6 +569,32 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F965D91BEDEBFE1CCE03D91B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				71B4E28DF45178F3CE308E8C /* AddStudySheet.swift in Sources */,
+				913A8EE2596B54682587B0DC /* CTPreset.swift in Sources */,
+				C67661A2A3D0D2DE3822D878 /* Chart.swift in Sources */,
+				3CDE319DEC745B611601AC33 /* ChartDetailView.swift in Sources */,
+				53EC3C4C67210A32813B9F11 /* ChartListView.swift in Sources */,
+				F21AE8F3542F28C1278CB109 /* ChartRowView.swift in Sources */,
+				54DC9666BCC8DFD872CD33DE /* ChartStorage.swift in Sources */,
+				179B32EEAA994C40899A6028 /* ChartrixApp.swift in Sources */,
+				DD12332CBEF8BF9D224D11D9 /* ContentView.swift in Sources */,
+				86DD87CB046DC7FD916D6D75 /* DICOMMetadataReader.swift in Sources */,
+				095AE929353CE3449A0869B0 /* DICOMSliceRenderer.swift in Sources */,
+				83CE26BCBC4A3B242DB0E0EE /* MeasureOverlay.swift in Sources */,
+				DD5AFC847C065D0F027A6340 /* Measurement.swift in Sources */,
+				279587C63294A617B439FF47 /* NewChartSheet.swift in Sources */,
+				7AA1906AF4DF79385C6F6730 /* Note.swift in Sources */,
+				4C22BF80D02FC1CECA71229B /* NoteEditorView.swift in Sources */,
+				D96A43EA4BB35C357DE021C2 /* NotesListView.swift in Sources */,
+				995476A102632C19377D18E6 /* USDZGenerator.swift in Sources */,
+				7B297DF3F31D1C0B68F9D676 /* VTKBridge.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
@@ -606,7 +626,6 @@
 					"-lVTK",
 					"-lz",
 					"-framework OpenGLES",
-					"-framework GLKit",
 					"-framework UIKit",
 					"-framework QuartzCore",
 				);
@@ -647,7 +666,6 @@
 					"-lVTK",
 					"-lz",
 					"-framework OpenGLES",
-					"-framework GLKit",
 					"-framework UIKit",
 					"-framework QuartzCore",
 				);
@@ -659,42 +677,6 @@
 				TARGETED_DEVICE_FAMILY = 2;
 			};
 			name = Debug;
-		};
-		540857C49A97A05FCBE04F3A /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
-				COMBINE_HIDPI_IMAGES = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(PROJECT_DIR)/vtk-install/macos-arm64/include/vtk-9.4",
-					"$(PROJECT_DIR)/VTKSwiftApp/Bridge",
-				);
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(PROJECT_DIR)/vtk-install/macos-arm64/lib",
-				);
-				OTHER_LDFLAGS = (
-					"-lVTK",
-					"-lz",
-					"-framework OpenGL",
-					"-framework Cocoa",
-					"-framework QuartzCore",
-					"-framework Metal",
-					"-framework MetalKit",
-					"-framework ModelIO",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.OutChart;
-				PRODUCT_NAME = OutChart;
-				SDKROOT = macosx;
-				SWIFT_OBJC_BRIDGING_HEADER = "OutChart/Bridge/OutChart-Bridging-Header.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-			};
-			name = Release;
 		};
 		67AFBB0C3FEE6A807CBCA4D2 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -728,53 +710,40 @@
 			};
 			name = Release;
 		};
-		85078C368098F7B392E5289D /* Debug */ = {
+		86C2C6FAB3852E03FE40E9EB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				COMBINE_HIDPI_IMAGES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				"HEADER_SEARCH_PATHS[sdk=iphoneos*]" = (
-					"$(PROJECT_DIR)/vtk-install/ios-arm64/include/vtk-9.4",
-					"$(PROJECT_DIR)/VTKSwiftApp/Bridge",
-				);
-				"HEADER_SEARCH_PATHS[sdk=iphonesimulator*]" = (
-					"$(PROJECT_DIR)/vtk-install/ios-sim-arm64/include/vtk-9.4",
+				HEADER_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/vtk-install/macos-arm64/include/vtk-9.4",
 					"$(PROJECT_DIR)/VTKSwiftApp/Bridge",
 				);
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/Frameworks",
+					"@executable_path/../Frameworks",
 				);
-				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
-					"$(PROJECT_DIR)/vtk-install/ios-arm64/lib",
-				);
-				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = (
-					"$(PROJECT_DIR)/vtk-install/ios-sim-arm64/lib",
+				LIBRARY_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/vtk-install/macos-arm64/lib",
 				);
 				OTHER_LDFLAGS = (
 					"-lVTK",
 					"-lz",
-					"-framework OpenGLES",
-					"-framework GLKit",
-					"-framework UIKit",
+					"-framework OpenGL",
+					"-framework Cocoa",
 					"-framework QuartzCore",
 					"-framework Metal",
 					"-framework MetalKit",
 					"-framework ModelIO",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.OutChart;
-				PRODUCT_NAME = OutChart;
-				SDKROOT = iphoneos;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "OutChart/Bridge/OutChart-Bridging-Header.h";
+				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.Chartrix;
+				PRODUCT_NAME = Chartrix;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Chartrix/Bridge/Chartrix-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -835,9 +804,10 @@
 			};
 			name = Release;
 		};
-		CE03E40B33C1F1AF568D2FA7 /* Debug */ = {
+		E783ECACA3691D8FA530B2D5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				COMBINE_HIDPI_IMAGES = YES;
@@ -863,61 +833,11 @@
 					"-framework MetalKit",
 					"-framework ModelIO",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.OutChart;
-				PRODUCT_NAME = OutChart;
+				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.Chartrix;
+				PRODUCT_NAME = Chartrix;
 				SDKROOT = macosx;
-				SWIFT_OBJC_BRIDGING_HEADER = "OutChart/Bridge/OutChart-Bridging-Header.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-			};
-			name = Debug;
-		};
-		E1791DF3B482EBF9B0B54E8F /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				"HEADER_SEARCH_PATHS[sdk=iphoneos*]" = (
-					"$(PROJECT_DIR)/vtk-install/ios-arm64/include/vtk-9.4",
-					"$(PROJECT_DIR)/VTKSwiftApp/Bridge",
-				);
-				"HEADER_SEARCH_PATHS[sdk=iphonesimulator*]" = (
-					"$(PROJECT_DIR)/vtk-install/ios-sim-arm64/include/vtk-9.4",
-					"$(PROJECT_DIR)/VTKSwiftApp/Bridge",
-				);
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
-					"$(PROJECT_DIR)/vtk-install/ios-arm64/lib",
-				);
-				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = (
-					"$(PROJECT_DIR)/vtk-install/ios-sim-arm64/lib",
-				);
-				OTHER_LDFLAGS = (
-					"-lVTK",
-					"-lz",
-					"-framework OpenGLES",
-					"-framework GLKit",
-					"-framework UIKit",
-					"-framework QuartzCore",
-					"-framework Metal",
-					"-framework MetalKit",
-					"-framework ModelIO",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.OutChart;
-				PRODUCT_NAME = OutChart;
-				SDKROOT = iphoneos;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "OutChart/Bridge/OutChart-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "Chartrix/Bridge/Chartrix-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -1017,18 +937,131 @@
 			};
 			name = Debug;
 		};
+		F05A7F149FE4EDBB02FCDE78 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				"HEADER_SEARCH_PATHS[sdk=iphoneos*]" = (
+					"$(PROJECT_DIR)/vtk-install/ios-arm64/include/vtk-9.4",
+					"$(PROJECT_DIR)/VTKSwiftApp/Bridge",
+				);
+				"HEADER_SEARCH_PATHS[sdk=iphonesimulator*]" = (
+					"$(PROJECT_DIR)/vtk-install/ios-sim-arm64/include/vtk-9.4",
+					"$(PROJECT_DIR)/VTKSwiftApp/Bridge",
+				);
+				INFOPLIST_KEY_CFBundleDisplayName = Chartrix;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
+				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "DICOM 데이터를 저장하고 관리합니다.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "DICOM 영상 파일을 사진 라이브러리에서 가져올 때 사용합니다.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = (
+					UIInterfaceOrientationPortrait,
+					UIInterfaceOrientationLandscapeLeft,
+					UIInterfaceOrientationLandscapeRight,
+					UIInterfaceOrientationPortraitUpsideDown,
+				);
+				INFOPLIST_KEY_UISupportsFullScreen = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
+					"$(PROJECT_DIR)/vtk-install/ios-arm64/lib",
+				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = (
+					"$(PROJECT_DIR)/vtk-install/ios-sim-arm64/lib",
+				);
+				MARKETING_VERSION = 1.0.0;
+				OTHER_LDFLAGS = (
+					"-lVTK",
+					"-lz",
+					"-framework OpenGLES",
+					"-framework UIKit",
+					"-framework QuartzCore",
+					"-framework Metal",
+					"-framework MetalKit",
+					"-framework ModelIO",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.Chartrix;
+				PRODUCT_NAME = Chartrix;
+				SDKROOT = iphoneos;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Chartrix/Bridge/Chartrix-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		FB425733E6A4B04F968C8BD9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				"HEADER_SEARCH_PATHS[sdk=iphoneos*]" = (
+					"$(PROJECT_DIR)/vtk-install/ios-arm64/include/vtk-9.4",
+					"$(PROJECT_DIR)/VTKSwiftApp/Bridge",
+				);
+				"HEADER_SEARCH_PATHS[sdk=iphonesimulator*]" = (
+					"$(PROJECT_DIR)/vtk-install/ios-sim-arm64/include/vtk-9.4",
+					"$(PROJECT_DIR)/VTKSwiftApp/Bridge",
+				);
+				INFOPLIST_KEY_CFBundleDisplayName = Chartrix;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
+				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "DICOM 데이터를 저장하고 관리합니다.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "DICOM 영상 파일을 사진 라이브러리에서 가져올 때 사용합니다.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = (
+					UIInterfaceOrientationPortrait,
+					UIInterfaceOrientationLandscapeLeft,
+					UIInterfaceOrientationLandscapeRight,
+					UIInterfaceOrientationPortraitUpsideDown,
+				);
+				INFOPLIST_KEY_UISupportsFullScreen = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
+					"$(PROJECT_DIR)/vtk-install/ios-arm64/lib",
+				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = (
+					"$(PROJECT_DIR)/vtk-install/ios-sim-arm64/lib",
+				);
+				MARKETING_VERSION = 1.0.0;
+				OTHER_LDFLAGS = (
+					"-lVTK",
+					"-lz",
+					"-framework OpenGLES",
+					"-framework UIKit",
+					"-framework QuartzCore",
+					"-framework Metal",
+					"-framework MetalKit",
+					"-framework ModelIO",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.Chartrix;
+				PRODUCT_NAME = Chartrix;
+				SDKROOT = iphoneos;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Chartrix/Bridge/Chartrix-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		24959C1CF2A365DC2C20D15B /* Build configuration list for PBXNativeTarget "OutChart-iOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				85078C368098F7B392E5289D /* Debug */,
-				E1791DF3B482EBF9B0B54E8F /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
-		};
 		515CBD097A6F5B8FDF064123 /* Build configuration list for PBXNativeTarget "VTKSwiftApp-iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1038,11 +1071,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		A3A512F8E73AB194C793E668 /* Build configuration list for PBXNativeTarget "OutChart-macOS" */ = {
+		7EE39D9188ECE3EDF378F845 /* Build configuration list for PBXNativeTarget "Chartrix-macOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				CE03E40B33C1F1AF568D2FA7 /* Debug */,
-				540857C49A97A05FCBE04F3A /* Release */,
+				86C2C6FAB3852E03FE40E9EB /* Debug */,
+				E783ECACA3691D8FA530B2D5 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -1061,6 +1094,15 @@
 			buildConfigurations = (
 				EBE570424726D809F5BB0F23 /* Debug */,
 				67AFBB0C3FEE6A807CBCA4D2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F59D24CE9C35546C4D08E4EE /* Build configuration list for PBXNativeTarget "Chartrix-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FB425733E6A4B04F968C8BD9 /* Debug */,
+				F05A7F149FE4EDBB02FCDE78 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
