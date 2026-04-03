@@ -10,7 +10,7 @@
 |------|-----|
 | **앱 이름** | Chartrix |
 | **부제 (Subtitle)** | 의료영상 3D 뷰어 |
-| **번들 ID** | `com.developeracademy.Chartrix` |
+| **번들 ID** | `com.codershigh.Chartrix` |
 | **SKU** | `chartrix-ios-001` |
 | **기본 언어** | 한국어 (ko) |
 | **카테고리 (Primary)** | Medical |
@@ -232,7 +232,7 @@ App Store Connect에 업로드할 스크린샷 크기:
 ## 13. 제출 전 체크리스트
 
 - [ ] Apple Developer Program 활성 구독 확인
-- [ ] App Store Connect에서 앱 등록 (번들 ID: com.developeracademy.Chartrix)
+- [ ] App Store Connect에서 앱 등록 (번들 ID: com.codershigh.Chartrix)
 - [ ] 인증서 및 프로비저닝 프로파일 생성 (Distribution)
 - [ ] Xcode → Archive → Upload to App Store Connect
 - [ ] 스크린샷 5장 업로드 (iPhone 6.9" + 6.7" 필수)

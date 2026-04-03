@@ -11,6 +11,7 @@
 		0109987451E48E5D822BE6D5 /* prepare_dem.py in Resources */ = {isa = PBXBuildFile; fileRef = 49B133044D7DB3413AEEB984 /* prepare_dem.py */; };
 		073E3264D3BAA69385B120AB /* CaseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C6D54F64A183F339E637894 /* CaseDetailView.swift */; };
 		079DE2D24CFB7F5FF3724429 /* ReportRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45ABB931BAD40E9841E81781 /* ReportRecord.swift */; };
+		08E36E905E3B6954FF618A7A /* AppStore-Metadata.md in Resources */ = {isa = PBXBuildFile; fileRef = 6C81873FD3322D00A78CE2EA /* AppStore-Metadata.md */; };
 		095AE929353CE3449A0869B0 /* DICOMSliceRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A32CCA01D4EDE38CC74FB70 /* DICOMSliceRenderer.swift */; };
 		0B824DE702F39C1DE5A3CE32 /* VolumeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E113C30DDFE96288847A0B86 /* VolumeView.swift */; };
 		0BFE7B172471FCB52DC8D1A0 /* MeasureOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C6889BF870D801E846C1E5 /* MeasureOverlay.swift */; };
@@ -96,6 +97,7 @@
 		DD5AFC847C065D0F027A6340 /* Measurement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7229CFDEEAD967AE405E90D0 /* Measurement.swift */; };
 		DD79BA2434C308C59F04E0C5 /* ChartStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0986298261C6965AA2EA1256 /* ChartStorage.swift */; };
 		DD9CDD6BC27D861FF2B20DFD /* ReportListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 472F3D48F3C3706F1675DC58 /* ReportListView.swift */; };
+		E20BE660BBD5277DD6F1EC69 /* AppStore-Metadata.md in Resources */ = {isa = PBXBuildFile; fileRef = 6C81873FD3322D00A78CE2EA /* AppStore-Metadata.md */; };
 		E7D1BE04CD8F587EFDFD1F3A /* notion-promo-page.md in Resources */ = {isa = PBXBuildFile; fileRef = B9E0BCDA30CA6412896F8412 /* notion-promo-page.md */; };
 		EF9B6353668BF07065A777F6 /* ReportEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4745278F3C420A2CAB1FD78 /* ReportEditorView.swift */; };
 		F101C71BD97D853E1DBB2298 /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1273CA7E7311927030EE2A94 /* ExportView.swift */; };
@@ -143,6 +145,7 @@
 		687C362BBB9F3D593B80E291 /* CTPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CTPreset.swift; sourceTree = "<group>"; };
 		69252C5967B8083545B31240 /* SRTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTemplate.swift; sourceTree = "<group>"; };
 		6A32CCA01D4EDE38CC74FB70 /* DICOMSliceRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DICOMSliceRenderer.swift; sourceTree = "<group>"; };
+		6C81873FD3322D00A78CE2EA /* AppStore-Metadata.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "AppStore-Metadata.md"; sourceTree = "<group>"; };
 		7229CFDEEAD967AE405E90D0 /* Measurement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Measurement.swift; sourceTree = "<group>"; };
 		724359AB1081B2719BF1B986 /* MeasurementOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementOverlay.swift; sourceTree = "<group>"; };
 		7FC449D38889003F026C973A /* VTKView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VTKView.swift; sourceTree = "<group>"; };
@@ -227,6 +230,7 @@
 		66B9C984AECA0DDDBBE2DDDD /* docs */ = {
 			isa = PBXGroup;
 			children = (
+				6C81873FD3322D00A78CE2EA /* AppStore-Metadata.md */,
 				B9E0BCDA30CA6412896F8412 /* notion-promo-page.md */,
 			);
 			path = docs;
@@ -453,6 +457,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E20BE660BBD5277DD6F1EC69 /* AppStore-Metadata.md in Resources */,
 				BAD033519EFDB06DAEA98D15 /* Assets.xcassets in Resources */,
 				401C2DCFE339AC758872F1D0 /* PrivacyInfo.xcprivacy in Resources */,
 				E7D1BE04CD8F587EFDFD1F3A /* notion-promo-page.md in Resources */,
@@ -474,6 +479,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				08E36E905E3B6954FF618A7A /* AppStore-Metadata.md in Resources */,
 				2074458B1F88EF9E43C25E2D /* Assets.xcassets in Resources */,
 				695C14D503A4370814319A15 /* PrivacyInfo.xcprivacy in Resources */,
 				46614FD0F753A9CCBE4E7E68 /* notion-promo-page.md in Resources */,
@@ -629,7 +635,7 @@
 					"-framework UIKit",
 					"-framework QuartzCore",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.VTKSwiftApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codershigh.VTKSwiftApp;
 				PRODUCT_NAME = VTKSwift;
 				SDKROOT = iphoneos;
 				SWIFT_OBJC_BRIDGING_HEADER = "VTKSwiftApp/Bridge/VTKSwiftApp-Bridging-Header.h";
@@ -669,7 +675,7 @@
 					"-framework UIKit",
 					"-framework QuartzCore",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.VTKSwiftApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codershigh.VTKSwiftApp;
 				PRODUCT_NAME = VTKSwift;
 				SDKROOT = iphoneos;
 				SWIFT_OBJC_BRIDGING_HEADER = "VTKSwiftApp/Bridge/VTKSwiftApp-Bridging-Header.h";
@@ -702,7 +708,7 @@
 					"-framework Cocoa",
 					"-framework QuartzCore",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.VTKSwiftApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codershigh.VTKSwiftApp;
 				PRODUCT_NAME = VTKSwift;
 				SDKROOT = macosx;
 				SWIFT_OBJC_BRIDGING_HEADER = "VTKSwiftApp/Bridge/VTKSwiftApp-Bridging-Header.h";
@@ -739,7 +745,7 @@
 					"-framework MetalKit",
 					"-framework ModelIO",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.Chartrix;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codershigh.Chartrix;
 				PRODUCT_NAME = Chartrix;
 				SDKROOT = macosx;
 				SWIFT_OBJC_BRIDGING_HEADER = "Chartrix/Bridge/Chartrix-Bridging-Header.h";
@@ -833,7 +839,7 @@
 					"-framework MetalKit",
 					"-framework ModelIO",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.Chartrix;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codershigh.Chartrix;
 				PRODUCT_NAME = Chartrix;
 				SDKROOT = macosx;
 				SWIFT_OBJC_BRIDGING_HEADER = "Chartrix/Bridge/Chartrix-Bridging-Header.h";
@@ -865,7 +871,7 @@
 					"-framework Cocoa",
 					"-framework QuartzCore",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.VTKSwiftApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codershigh.VTKSwiftApp;
 				PRODUCT_NAME = VTKSwift;
 				SDKROOT = macosx;
 				SWIFT_OBJC_BRIDGING_HEADER = "VTKSwiftApp/Bridge/VTKSwiftApp-Bridging-Header.h";
@@ -988,7 +994,7 @@
 					"-framework MetalKit",
 					"-framework ModelIO",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.Chartrix;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codershigh.Chartrix;
 				PRODUCT_NAME = Chartrix;
 				SDKROOT = iphoneos;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
@@ -1049,7 +1055,7 @@
 					"-framework MetalKit",
 					"-framework ModelIO",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.developeracademy.Chartrix;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codershigh.Chartrix;
 				PRODUCT_NAME = Chartrix;
 				SDKROOT = iphoneos;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;

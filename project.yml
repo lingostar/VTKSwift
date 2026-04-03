@@ -1,6 +1,6 @@
 name: VTKSwift
 options:
-  bundleIdPrefix: com.developeracademy
+  bundleIdPrefix: com.codershigh
   deploymentTarget:
     iOS: "17.0"
     macOS: "14.0"
@@ -25,7 +25,7 @@ targets:
           - "**/.DS_Store"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.developeracademy.VTKSwiftApp
+        PRODUCT_BUNDLE_IDENTIFIER: com.codershigh.VTKSwiftApp
         PRODUCT_NAME: VTKSwift
         INFOPLIST_FILE: VTKSwiftApp/Info.plist
         SWIFT_OBJC_BRIDGING_HEADER: VTKSwiftApp/Bridge/VTKSwiftApp-Bridging-Header.h
@@ -64,7 +64,7 @@ targets:
           - "**/.DS_Store"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.developeracademy.VTKSwiftApp
+        PRODUCT_BUNDLE_IDENTIFIER: com.codershigh.VTKSwiftApp
         PRODUCT_NAME: VTKSwift
         INFOPLIST_FILE: VTKSwiftApp/Info.plist
         SWIFT_OBJC_BRIDGING_HEADER: VTKSwiftApp/Bridge/VTKSwiftApp-Bridging-Header.h
@@ -100,7 +100,7 @@ targets:
         buildPhase: sources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.developeracademy.Chartrix
+        PRODUCT_BUNDLE_IDENTIFIER: com.codershigh.Chartrix
         PRODUCT_NAME: Chartrix
         GENERATE_INFOPLIST_FILE: true
         SWIFT_OBJC_BRIDGING_HEADER: Chartrix/Bridge/Chartrix-Bridging-Header.h
@@ -171,7 +171,7 @@ targets:
         buildPhase: sources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.developeracademy.Chartrix
+        PRODUCT_BUNDLE_IDENTIFIER: com.codershigh.Chartrix
         PRODUCT_NAME: Chartrix
         GENERATE_INFOPLIST_FILE: true
         SWIFT_OBJC_BRIDGING_HEADER: Chartrix/Bridge/Chartrix-Bridging-Header.h
