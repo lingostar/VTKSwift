@@ -48,9 +48,19 @@ enum ChartStorage {
 
     // MARK: - Local → iCloud Migration
 
-    /// 로컬 Documents/Charts 에 기존 데이터가 있으면 iCloud로 마이그레이션
-    /// 앱 시작 시 한 번 호출합니다.
+    /// 마이그레이션 완료 여부 (UI에서 확인 가능)
+    private(set) static var isMigrationComplete = false
+
+    /// 로컬 Documents/Charts 에 기존 데이터가 있으면 iCloud로 마이그레이션 (병합 방식)
+    ///
+    /// - iCloud에 Charts 폴더가 없으면: 통째로 이동
+    /// - iCloud에 Charts 폴더가 있으면: 로컬의 각 차트 폴더를 개별 병합
+    /// - 이동 완료된 로컬 폴더는 삭제하여 중복 방지
+    ///
+    /// 이 메서드는 **동기적**으로 실행됩니다. 호출 후에 파일 접근이 안전합니다.
     static func migrateLocalToICloudIfNeeded() {
+        defer { isMigrationComplete = true }
+
         guard let iCloudDocs = iCloudDocumentsURL else { return }
 
         let localDocs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -59,28 +69,72 @@ enum ChartStorage {
         let fm = FileManager.default
         guard fm.fileExists(atPath: localCharts.path) else { return }
 
+        // 로컬 Charts 내에 실제 콘텐츠가 있는지 확인
+        guard let localContents = try? fm.contentsOfDirectory(
+            at: localCharts, includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ), !localContents.isEmpty else { return }
+
         let iCloudCharts = iCloudDocs.appendingPathComponent("Charts", isDirectory: true)
 
-        // 이미 iCloud에 Charts 폴더가 있으면 마이그레이션 스킵
-        if fm.fileExists(atPath: iCloudCharts.path) {
-            // iCloud에 이미 데이터가 있으면 로컬을 건드리지 않음
-            return
-        }
-
-        // 로컬 Charts → iCloud Charts 이동
-        do {
-            try fm.moveItem(at: localCharts, to: iCloudCharts)
-            print("[ChartStorage] Migrated local Charts → iCloud")
-        } catch {
-            print("[ChartStorage] Migration failed: \(error.localizedDescription)")
-            // 이동 실패 시 복사 시도
+        // Case 1: iCloud에 Charts 폴더가 없으면 → 통째로 이동
+        if !fm.fileExists(atPath: iCloudCharts.path) {
             do {
-                try fm.copyItem(at: localCharts, to: iCloudCharts)
-                print("[ChartStorage] Copied local Charts → iCloud (move failed)")
+                try fm.moveItem(at: localCharts, to: iCloudCharts)
+                print("[ChartStorage] Migrated local Charts → iCloud (\(localContents.count) items)")
+                return
             } catch {
-                print("[ChartStorage] Copy also failed: \(error.localizedDescription)")
+                print("[ChartStorage] Move failed, falling back to merge: \(error.localizedDescription)")
+                // move 실패 시 아래 merge 로직으로 진행
             }
         }
+
+        // Case 2: iCloud에 이미 Charts 폴더가 있으면 → 차트별 병합
+        try? fm.createDirectory(at: iCloudCharts, withIntermediateDirectories: true)
+
+        var migratedCount = 0
+        var skippedCount = 0
+
+        for localItem in localContents {
+            let itemName = localItem.lastPathComponent
+            let iCloudDest = iCloudCharts.appendingPathComponent(itemName)
+
+            if fm.fileExists(atPath: iCloudDest.path) {
+                // iCloud에 같은 이름의 차트 폴더가 이미 있음 → 스킵
+                skippedCount += 1
+                print("[ChartStorage] Merge skip (already in iCloud): \(itemName)")
+                continue
+            }
+
+            // 로컬 차트 폴더를 iCloud로 이동
+            do {
+                try fm.moveItem(at: localItem, to: iCloudDest)
+                migratedCount += 1
+                print("[ChartStorage] Merged → iCloud: \(itemName)")
+            } catch {
+                // 이동 실패 시 복사 시도
+                do {
+                    try fm.copyItem(at: localItem, to: iCloudDest)
+                    // 복사 성공 시 로컬 원본 삭제
+                    try? fm.removeItem(at: localItem)
+                    migratedCount += 1
+                    print("[ChartStorage] Copied → iCloud: \(itemName)")
+                } catch {
+                    print("[ChartStorage] Failed to migrate \(itemName): \(error.localizedDescription)")
+                }
+            }
+        }
+
+        // 로컬 Charts 폴더가 비었으면 삭제
+        if let remaining = try? fm.contentsOfDirectory(
+            at: localCharts, includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ), remaining.isEmpty {
+            try? fm.removeItem(at: localCharts)
+            print("[ChartStorage] Removed empty local Charts folder")
+        }
+
+        print("[ChartStorage] Migration complete: \(migratedCount) migrated, \(skippedCount) skipped")
     }
 
     // MARK: - Import DICOM → Study

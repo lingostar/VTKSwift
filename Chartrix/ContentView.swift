@@ -4,6 +4,7 @@ import SwiftData
 struct ContentView: View {
     @State private var selectedChart: Chart?
     @State private var didMigrate = false
+    @State private var isMigrating = false
     @StateObject private var syncMonitor = CloudSyncMonitor()
 
     #if os(iOS)
@@ -12,18 +13,50 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            #if os(macOS)
-            splitView
-            #else
-            if horizontalSizeClass == .regular {
-                splitView
+            if isMigrating {
+                migrationView
             } else {
-                stackView
+                #if os(macOS)
+                splitView
+                #else
+                if horizontalSizeClass == .regular {
+                    splitView
+                } else {
+                    stackView
+                }
+                #endif
             }
-            #endif
         }
-        .onAppear { migrateToICloudOnce() }
+        .task { await migrateToICloudOnce() }
         .environmentObject(syncMonitor)
+    }
+
+    /// 마이그레이션 진행 중 화면
+    private var migrationView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            Image(systemName: "icloud.and.arrow.up")
+                .font(.system(size: 48))
+                .foregroundColor(.accentColor)
+                .symbolEffect(.pulse)
+
+            Text("iCloud로 데이터 이동 중...")
+                .font(.title3)
+                .fontWeight(.medium)
+
+            Text("로컬 데이터를 iCloud에 업로드하고 있습니다.\n잠시만 기다려 주세요.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+
+            ProgressView()
+                .padding(.top, 8)
+
+            Spacer()
+            Spacer()
+        }
+        .padding()
     }
 
     // MARK: - iPad / Mac: NavigationSplitView
@@ -57,12 +90,43 @@ struct ContentView: View {
     }
 
     /// 앱 첫 실행 시 로컬 데이터를 iCloud로 마이그레이션
-    private func migrateToICloudOnce() {
+    /// 마이그레이션 완료 후에 UI가 파일에 접근합니다.
+    private func migrateToICloudOnce() async {
         guard !didMigrate else { return }
         didMigrate = true
-        DispatchQueue.global(qos: .utility).async {
-            ChartStorage.migrateLocalToICloudIfNeeded()
+
+        // iCloud가 가용하고 로컬에 데이터가 있을 때만 마이그레이션 UI 표시
+        let needsMigration = ChartStorage.isICloudAvailable && hasLocalCharts()
+
+        if needsMigration {
+            isMigrating = true
         }
+
+        // 백그라운드에서 마이그레이션 실행 (완료까지 대기)
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                ChartStorage.migrateLocalToICloudIfNeeded()
+                continuation.resume()
+            }
+        }
+
+        // 마이그레이션 완료 → UI 전환
+        if needsMigration {
+            // 살짝 지연을 줘서 iCloud 파일 시스템이 반영할 시간 확보
+            try? await Task.sleep(for: .milliseconds(500))
+            isMigrating = false
+        }
+    }
+
+    /// 로컬 Documents/Charts 에 데이터가 있는지 빠르게 확인
+    private func hasLocalCharts() -> Bool {
+        let localDocs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let localCharts = localDocs.appendingPathComponent("Charts", isDirectory: true)
+        guard let contents = try? FileManager.default.contentsOfDirectory(
+            at: localCharts, includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else { return false }
+        return !contents.isEmpty
     }
 }
 
