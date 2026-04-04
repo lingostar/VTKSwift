@@ -189,7 +189,7 @@ The app processes all data locally on-device.
 ## 10. 개인정보 처리방침 URL
 
 ```
-https://lingostar.github.io/VTKSwift/privacy
+https://lingostar.github.io/Chartrix/privacy
 ```
 
 > ⬆ GitHub Pages에 호스팅. 아래 privacy.html 파일 참조.
@@ -199,7 +199,7 @@ https://lingostar.github.io/VTKSwift/privacy
 ## 11. 지원 URL
 
 ```
-https://github.com/lingostar/VTKSwift/issues
+https://github.com/lingostar/Chartrix/issues
 ```
 
 ---
