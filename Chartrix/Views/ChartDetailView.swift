@@ -90,7 +90,8 @@ struct ChartDetailView: View {
         .sheet(isPresented: $showAddStudy) {
             AddStudySheet(chart: chart) { study, folderURL in
                 modelContext.insert(study)
-                chart.studies.append(study)
+                if chart.studies == nil { chart.studies = [] }
+                chart.studies?.append(study)
                 ChartStorage.importDICOM(study: study, chartAlias: chart.alias, from: folderURL)
                 chart.updatedDate = Date()
                 try? modelContext.save()
@@ -192,7 +193,7 @@ struct ChartDetailView: View {
 
     /// USDZ 파일이 없으면 백그라운드에서 자동 생성
     private func ensureUSDZExists() {
-        for study in chart.studies {
+        for study in (chart.studies ?? []) {
             if let rel = study.usdzFilePath, !rel.isEmpty {
                 let url = ChartStorage.documentsDirectory.appendingPathComponent(rel)
                 if FileManager.default.fileExists(atPath: url.path) { continue }
@@ -301,7 +302,7 @@ private struct DICOMTabView: View {
     /// 현재 슬라이스의 저장된 측정 결과
     var currentMeasurements: [Measurement] {
         let slice = Int(currentSlice)
-        return study.measurements
+        return (study.measurements ?? [])
             .filter { $0.sliceIndex == slice }
             .sorted { $0.createdDate < $1.createdDate }
     }
@@ -345,7 +346,8 @@ private struct DICOMTabView: View {
                                                 value: result.value
                                             )
                                             modelContext.insert(m)
-                                            study.measurements.append(m)
+                                            if study.measurements == nil { study.measurements = [] }
+                                            study.measurements?.append(m)
                                             try? modelContext.save()
                                             currentPoints = []
                                         }

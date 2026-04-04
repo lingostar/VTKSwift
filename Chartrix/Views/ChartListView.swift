@@ -81,7 +81,8 @@ struct ChartListView: View {
         }
         // 2) Study 명시적 insert + 관계 설정
         modelContext.insert(study)
-        chart.studies.append(study)
+        if chart.studies == nil { chart.studies = [] }
+        chart.studies?.append(study)
         // 3) DICOM 파일 복사
         ChartStorage.importDICOM(study: study, chartAlias: chart.alias, from: folderURL)
         chart.updatedDate = Date()

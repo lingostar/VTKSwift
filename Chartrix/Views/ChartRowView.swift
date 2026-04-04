@@ -21,7 +21,7 @@ struct ChartRowView: View {
                     .lineLimit(1)
 
                 // Study 목록
-                if chart.studies.isEmpty {
+                if (chart.studies ?? []).isEmpty {
                     Text("No studies")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -30,8 +30,8 @@ struct ChartRowView: View {
                         ForEach(chart.sortedStudies.prefix(3)) { study in
                             studyRow(study)
                         }
-                        if chart.studies.count > 3 {
-                            Text("+\(chart.studies.count - 3) more")
+                        if (chart.studies ?? []).count > 3 {
+                            Text("+\((chart.studies ?? []).count - 3) more")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                         }

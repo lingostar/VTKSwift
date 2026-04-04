@@ -12,7 +12,7 @@ struct NotesListView: View {
     @State private var editingNote: Note?
 
     var sortedNotes: [Note] {
-        chart.doctorNotes.sorted { $0.updatedDate > $1.updatedDate }
+        (chart.doctorNotes ?? []).sorted { $0.updatedDate > $1.updatedDate }
     }
 
     var body: some View {

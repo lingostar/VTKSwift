@@ -114,7 +114,8 @@ private struct ChartSplitListView: View {
                 }
                 // 2) Study를 명시적으로 insert 후 관계 설정
                 modelContext.insert(study)
-                chart.studies.append(study)
+                if chart.studies == nil { chart.studies = [] }
+                chart.studies?.append(study)
                 // 3) DICOM 파일 복사
                 ChartStorage.importDICOM(study: study, chartAlias: chart.alias, from: folderURL)
                 chart.updatedDate = Date()

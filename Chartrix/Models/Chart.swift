@@ -11,10 +11,10 @@ final class Chart {
     var updatedDate: Date
 
     @Relationship(deleteRule: .cascade)
-    var studies: [Study] = []
+    var studies: [Study]?
 
     @Relationship(deleteRule: .cascade)
-    var doctorNotes: [Note] = []
+    var doctorNotes: [Note]?
 
     init(
         alias: String = "",
@@ -49,7 +49,7 @@ final class Study {
     var chart: Chart?
 
     @Relationship(deleteRule: .cascade)
-    var measurements: [Measurement] = []
+    var measurements: [Measurement]?
 
     init(
         modality: String = "CT",
@@ -79,12 +79,13 @@ extension Chart {
 
     /// 날짜순 정렬된 Studies (최신 먼저)
     var sortedStudies: [Study] {
-        studies.sorted { ($0.studyDate) > ($1.studyDate) }
+        (studies ?? []).sorted { ($0.studyDate) > ($1.studyDate) }
     }
 
     /// Study 요약 (예: "CT 2 · MRI 1")
     var studySummary: String {
-        let grouped = Dictionary(grouping: studies) { $0.modality.uppercased() }
+        let all = studies ?? []
+        let grouped = Dictionary(grouping: all) { $0.modality.uppercased() }
         let parts = grouped.keys.sorted().compactMap { key -> String? in
             guard let count = grouped[key]?.count else { return nil }
             return "\(key) \(count)"
@@ -94,7 +95,7 @@ extension Chart {
 
     /// 전체 이미지 수
     var totalImageCount: Int {
-        studies.reduce(0) { $0 + $1.imageCount }
+        (studies ?? []).reduce(0) { $0 + $1.imageCount }
     }
 
     var formattedCreatedDate: String {

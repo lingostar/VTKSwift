@@ -85,7 +85,8 @@ struct NoteEditorView: View {
                 study: selectedStudy
             )
             modelContext.insert(newNote)
-            chart.doctorNotes.append(newNote)
+            if chart.doctorNotes == nil { chart.doctorNotes = [] }
+            chart.doctorNotes?.append(newNote)
         }
         chart.updatedDate = Date()
         try? modelContext.save()
