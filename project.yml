@@ -178,6 +178,13 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Chartrix/Chartrix.entitlements
         SWIFT_OBJC_BRIDGING_HEADER: Chartrix/Bridge/Chartrix-Bridging-Header.h
         ARCHS: arm64
+
+        # --- App Store metadata ---
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_KEY_CFBundleDisplayName: Chartrix
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.medical"
+
         HEADER_SEARCH_PATHS:
           - "$(PROJECT_DIR)/vtk-install/macos-arm64/include/vtk-9.4"
           - "$(PROJECT_DIR)/VTKSwiftApp/Bridge"
