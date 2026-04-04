@@ -39,6 +39,25 @@ enum ChartStorage {
         FileManager.default.ubiquityIdentityToken != nil
     }
 
+    // MARK: - iCloud Usage Tracking
+
+    private static let wasUsingICloudKey = "ChartStorage.wasUsingICloud"
+
+    /// 이전에 iCloud를 사용했는지 여부 (UserDefaults 기반)
+    static var wasUsingICloud: Bool {
+        UserDefaults.standard.bool(forKey: wasUsingICloudKey)
+    }
+
+    /// 현재 iCloud 사용 상태를 기록
+    static func recordICloudUsage() {
+        UserDefaults.standard.set(isICloudAvailable, forKey: wasUsingICloudKey)
+    }
+
+    /// "이전에 iCloud를 썼는데 지금은 로그아웃된" 상태
+    static var needsICloudReSignIn: Bool {
+        wasUsingICloud && !isICloudAvailable
+    }
+
     /// Charts 루트 디렉토리
     static var chartsDirectory: URL {
         let url = documentsDirectory.appendingPathComponent("Charts", isDirectory: true)
@@ -135,6 +154,77 @@ enum ChartStorage {
         }
 
         print("[ChartStorage] Migration complete: \(migratedCount) migrated, \(skippedCount) skipped")
+    }
+
+    // MARK: - iCloud → Local Migration (로그아웃 대응)
+
+    /// iCloud 로그아웃 시: iCloud 컨테이너에 아직 접근 가능하면 로컬로 복사
+    ///
+    /// iOS/macOS는 로그아웃 후에도 캐시된 iCloud 파일에 잠시 접근 가능할 수 있습니다.
+    /// 이 함수는 가능한 한 파일을 로컬로 복사하여 데이터 유실을 방지합니다.
+    ///
+    /// 동기적으로 실행됩니다.
+    static func migrateICloudToLocalIfNeeded() {
+        // iCloud 사용 가능하면 역방향 마이그레이션 불필요
+        guard !isICloudAvailable else { return }
+        // 이전에 iCloud를 쓴 적 없으면 할 것 없음
+        guard wasUsingICloud else { return }
+
+        let fm = FileManager.default
+        let localDocs = fm.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let localCharts = localDocs.appendingPathComponent("Charts", isDirectory: true)
+
+        // 이미 로컬에 Charts가 있으면 스킵 (이전에 이미 복사됨)
+        if let localContents = try? fm.contentsOfDirectory(
+            at: localCharts, includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ), !localContents.isEmpty {
+            print("[ChartStorage] Local Charts already exists, skip reverse migration")
+            return
+        }
+
+        // iCloud 컨테이너에 접근 시도
+        // 로그아웃 후에도 캐시로 접근 가능할 수 있음
+        guard let containerURL = fm.url(forUbiquityContainerIdentifier: iCloudContainerID) else {
+            print("[ChartStorage] Cannot access iCloud container after logout")
+            return
+        }
+
+        let iCloudCharts = containerURL
+            .appendingPathComponent("Documents", isDirectory: true)
+            .appendingPathComponent("Charts", isDirectory: true)
+
+        guard fm.fileExists(atPath: iCloudCharts.path) else {
+            print("[ChartStorage] No Charts in iCloud container")
+            return
+        }
+
+        // iCloud → 로컬 복사
+        do {
+            try fm.copyItem(at: iCloudCharts, to: localCharts)
+            print("[ChartStorage] Reverse migration: iCloud Charts → local (\(localCharts.path))")
+        } catch {
+            print("[ChartStorage] Reverse migration failed: \(error.localizedDescription)")
+            // 개별 폴더 복사 시도
+            guard let items = try? fm.contentsOfDirectory(
+                at: iCloudCharts, includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            ) else { return }
+
+            try? fm.createDirectory(at: localCharts, withIntermediateDirectories: true)
+
+            var count = 0
+            for item in items {
+                let dest = localCharts.appendingPathComponent(item.lastPathComponent)
+                do {
+                    try fm.copyItem(at: item, to: dest)
+                    count += 1
+                } catch {
+                    print("[ChartStorage] Failed to copy \(item.lastPathComponent): \(error.localizedDescription)")
+                }
+            }
+            print("[ChartStorage] Reverse migration (partial): \(count)/\(items.count) items")
+        }
     }
 
     // MARK: - Import DICOM → Study

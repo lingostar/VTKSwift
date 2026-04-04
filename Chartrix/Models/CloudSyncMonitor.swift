@@ -4,11 +4,15 @@ import CloudKit
 
 /// CloudKit + iCloud Documents 동기화 상태를 모니터링
 /// 앱 최초 실행 시 동기화 진행 중임을 UI에 알려줍니다.
+/// iCloud 로그아웃 감지도 담당합니다.
 @MainActor
 final class CloudSyncMonitor: ObservableObject {
 
     /// 현재 동기화가 진행 중인지
     @Published var isSyncing: Bool = false
+
+    /// iCloud에서 로그아웃되어 데이터 접근 불가 상태
+    @Published var isSignedOutFromICloud: Bool = false
 
     /// iCloud 계정 상태
     @Published var accountStatus: CKAccountStatus = .couldNotDetermine
@@ -21,19 +25,29 @@ final class CloudSyncMonitor: ObservableObject {
     private let maxSyncDuration: TimeInterval = 15
 
     init() {
-        checkInitialSyncState()
+        checkInitialState()
     }
 
-    // MARK: - Initial Sync Detection
+    // MARK: - Initial State Detection
 
-    private func checkInitialSyncState() {
-        // iCloud 사용 불가하면 동기화 표시 불필요
+    private func checkInitialState() {
+        // 1) iCloud 로그아웃 감지
+        if ChartStorage.needsICloudReSignIn {
+            isSignedOutFromICloud = true
+            isSyncing = false
+            return
+        }
+
+        // 2) iCloud 사용 가능 여부 기록
+        ChartStorage.recordICloudUsage()
+
+        // 3) iCloud 사용 불가하면 동기화 표시 불필요
         guard ChartStorage.isICloudAvailable else {
             isSyncing = false
             return
         }
 
-        // iCloud 계정 상태 확인
+        // 4) iCloud 계정 상태 확인
         CKContainer(identifier: "iCloud.codershigh.Chartrix").accountStatus { [weak self] status, error in
             Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -46,6 +60,31 @@ final class CloudSyncMonitor: ObservableObject {
                     self.isSyncing = false
                 }
             }
+        }
+
+        // 5) iCloud 계정 변경 알림 구독
+        NotificationCenter.default.addObserver(
+            forName: .NSUbiquityIdentityDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.handleAccountChange()
+            }
+        }
+    }
+
+    /// iCloud 계정 변경 처리 (로그인/로그아웃)
+    private func handleAccountChange() {
+        ChartStorage.recordICloudUsage()
+
+        if ChartStorage.isICloudAvailable {
+            // 다시 로그인됨
+            isSignedOutFromICloud = false
+        } else if ChartStorage.wasUsingICloud {
+            // 로그아웃됨
+            isSignedOutFromICloud = true
+            finishSync()
         }
     }
 
@@ -75,10 +114,6 @@ final class CloudSyncMonitor: ObservableObject {
             finishSync()
             return
         }
-
-        // SwiftData @Query가 자동으로 업데이트하므로,
-        // 뷰가 차트 목록을 감지하면 배너만 보여주고
-        // 시간이 지나면 자연스럽게 사라짐
     }
 
     private func finishSync() {
@@ -90,8 +125,6 @@ final class CloudSyncMonitor: ObservableObject {
 
     /// 외부에서 데이터가 로드되었음을 알릴 때 (목록에 차트가 나타남)
     func notifyDataLoaded() {
-        // 데이터가 도착하면 약간의 지연 후 동기화 완료 처리
-        // (추가 데이터가 더 올 수 있으므로 바로 끄지 않음)
         guard isSyncing else { return }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(3))

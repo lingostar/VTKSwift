@@ -30,8 +30,12 @@ struct ChartListView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 12) {
-                    // iCloud 동기화 상태 표시
-                    if syncMonitor.isSyncing {
+                    // iCloud 상태 표시
+                    if syncMonitor.isSignedOutFromICloud {
+                        Image(systemName: "icloud.slash")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    } else if syncMonitor.isSyncing {
                         iCloudSyncIndicator
                     }
                     Button {
@@ -70,8 +74,12 @@ struct ChartListView: View {
 
     private var chartList: some View {
         List {
+            // iCloud 로그아웃 경고 배너
+            if syncMonitor.isSignedOutFromICloud {
+                iCloudSignedOutBanner
+            }
             // 동기화 배너 (동기화 진행 중일 때)
-            if syncMonitor.isSyncing {
+            else if syncMonitor.isSyncing {
                 iCloudSyncBanner
             }
 
@@ -88,7 +96,9 @@ struct ChartListView: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        if syncMonitor.isSyncing {
+        if syncMonitor.isSignedOutFromICloud {
+            AnyView(iCloudSignedOutFullScreen)
+        } else if syncMonitor.isSyncing {
             AnyView(
                 VStack(spacing: 20) {
                     Spacer()
@@ -133,6 +143,99 @@ struct ChartListView: View {
                 }
             )
         }
+    }
+
+    // MARK: - iCloud Signed Out UI
+
+    /// 전체 화면 — 차트가 없고 iCloud 로그아웃 상태
+    private var iCloudSignedOutFullScreen: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "icloud.slash")
+                .font(.system(size: 56))
+                .foregroundColor(.orange)
+
+            Text("iCloud Not Available")
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            VStack(spacing: 12) {
+                Text("Don't worry — your data is safely stored in iCloud.")
+                    .font(.body)
+                    .fontWeight(.medium)
+
+                Text("Sign in to your iCloud account to access\nyour charts and DICOM studies.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            openSettingsButton
+
+            Spacer()
+
+            VStack(spacing: 8) {
+                Divider()
+                Text("You can also create new charts locally.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Button("New Chart") {
+                    showNewChart = true
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding(.bottom, 24)
+        }
+        .padding()
+    }
+
+    /// 리스트 배너 — 차트는 보이지만 iCloud 로그아웃 상태
+    private var iCloudSignedOutBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: "icloud.slash")
+                    .foregroundColor(.orange)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("iCloud Not Available")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                    Text("Don't worry — your data is safely stored in iCloud. Sign in to access all your studies.")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+            }
+
+            openSettingsButton
+                .font(.caption)
+        }
+        .padding(.vertical, 8)
+        .listRowBackground(Color.orange.opacity(0.08))
+    }
+
+    /// 설정 열기 버튼
+    private var openSettingsButton: some View {
+        #if os(iOS)
+        Button {
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                UIApplication.shared.open(url)
+            }
+        } label: {
+            Label("Open Settings", systemImage: "gear")
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(.orange)
+        #else
+        Button {
+            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preferences.AppleIDPrefPane")!)
+        } label: {
+            Label("Open System Settings", systemImage: "gear")
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(.orange)
+        #endif
     }
 
     // MARK: - iCloud Sync Banner

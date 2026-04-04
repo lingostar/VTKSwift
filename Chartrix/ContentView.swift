@@ -89,32 +89,43 @@ struct ContentView: View {
         }
     }
 
-    /// 앱 첫 실행 시 로컬 데이터를 iCloud로 마이그레이션
-    /// 마이그레이션 완료 후에 UI가 파일에 접근합니다.
+    /// 앱 첫 실행 시 마이그레이션 처리
+    ///
+    /// - iCloud 사용 가능: 로컬 → iCloud 마이그레이션
+    /// - iCloud 로그아웃: iCloud → 로컬 역방향 마이그레이션 시도
+    /// - 마이그레이션 완료 후에 UI가 파일에 접근합니다.
     private func migrateToICloudOnce() async {
         guard !didMigrate else { return }
         didMigrate = true
 
-        // iCloud가 가용하고 로컬에 데이터가 있을 때만 마이그레이션 UI 표시
-        let needsMigration = ChartStorage.isICloudAvailable && hasLocalCharts()
+        if ChartStorage.isICloudAvailable {
+            // iCloud 사용 가능 — 정방향 마이그레이션
+            let needsMigration = hasLocalCharts()
 
-        if needsMigration {
-            isMigrating = true
-        }
-
-        // 백그라운드에서 마이그레이션 실행 (완료까지 대기)
-        await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                ChartStorage.migrateLocalToICloudIfNeeded()
-                continuation.resume()
+            if needsMigration {
+                isMigrating = true
             }
-        }
 
-        // 마이그레이션 완료 → UI 전환
-        if needsMigration {
-            // 살짝 지연을 줘서 iCloud 파일 시스템이 반영할 시간 확보
-            try? await Task.sleep(for: .milliseconds(500))
-            isMigrating = false
+            await withCheckedContinuation { continuation in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    ChartStorage.migrateLocalToICloudIfNeeded()
+                    ChartStorage.recordICloudUsage()
+                    continuation.resume()
+                }
+            }
+
+            if needsMigration {
+                try? await Task.sleep(for: .milliseconds(500))
+                isMigrating = false
+            }
+        } else if ChartStorage.needsICloudReSignIn {
+            // iCloud 로그아웃됨 — 역방향 마이그레이션 시도
+            await withCheckedContinuation { continuation in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    ChartStorage.migrateICloudToLocalIfNeeded()
+                    continuation.resume()
+                }
+            }
         }
     }
 
@@ -151,8 +162,26 @@ private struct ChartSplitListView: View {
 
     var body: some View {
         List(selection: $selectedChart) {
+            // iCloud 로그아웃 경고
+            if syncMonitor.isSignedOutFromICloud {
+                HStack(spacing: 10) {
+                    Image(systemName: "icloud.slash")
+                        .foregroundColor(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("iCloud Not Available")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                        Text("Don't worry — your data is safely stored in iCloud. Sign in to access all your studies.")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                }
+                .padding(.vertical, 4)
+                .listRowBackground(Color.orange.opacity(0.08))
+            }
             // 동기화 배너
-            if syncMonitor.isSyncing {
+            else if syncMonitor.isSyncing {
                 HStack(spacing: 10) {
                     Image(systemName: "icloud.and.arrow.down")
                         .foregroundColor(.accentColor)
@@ -188,7 +217,11 @@ private struct ChartSplitListView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 12) {
-                    if syncMonitor.isSyncing {
+                    if syncMonitor.isSignedOutFromICloud {
+                        Image(systemName: "icloud.slash")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    } else if syncMonitor.isSyncing {
                         Image(systemName: "icloud.and.arrow.down")
                             .font(.caption)
                             .foregroundColor(.secondary)
