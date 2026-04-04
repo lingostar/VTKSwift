@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 /// iCloud 컨테이너 식별자
 private let iCloudContainerID = "iCloud.codershigh.Chartrix"
@@ -215,6 +216,131 @@ enum ChartStorage {
             } else {
                 print("[USDZ-BG] ERROR: USDZGenerator.create failed")
             }
+        }
+    }
+
+    // MARK: - iCloud Download Support
+
+    /// iCloud 파일/디렉토리의 다운로드 상태
+    enum DownloadStatus {
+        case local              // 로컬에 이미 있음 (iCloud 아님)
+        case downloaded         // iCloud에서 다운로드 완료
+        case notDownloaded      // iCloud에만 있음 (다운로드 필요)
+        case downloading        // 다운로드 중
+    }
+
+    /// Study의 DICOM 디렉토리 다운로드 상태 확인
+    static func downloadStatus(for study: Study) -> DownloadStatus {
+        guard let dirURL = dicomDirectoryURL(for: study) else { return .notDownloaded }
+
+        // iCloud를 사용하지 않으면 로컬 파일
+        guard isICloudAvailable else {
+            return FileManager.default.fileExists(atPath: dirURL.path) ? .local : .notDownloaded
+        }
+
+        return directoryDownloadStatus(dirURL)
+    }
+
+    /// 디렉토리의 iCloud 다운로드 상태 확인
+    static func directoryDownloadStatus(_ dirURL: URL) -> DownloadStatus {
+        let fm = FileManager.default
+
+        // 디렉토리 자체가 없으면
+        guard fm.fileExists(atPath: dirURL.path) else { return .notDownloaded }
+
+        // 디렉토리 내 파일들의 상태 확인
+        guard let files = try? fm.contentsOfDirectory(
+            at: dirURL, includingPropertiesForKeys: [.ubiquitousItemDownloadingStatusKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            return .notDownloaded
+        }
+
+        if files.isEmpty { return .notDownloaded }
+
+        var downloadedCount = 0
+        var downloadingCount = 0
+
+        for file in files {
+            guard let values = try? file.resourceValues(
+                forKeys: [.ubiquitousItemDownloadingStatusKey]
+            ) else {
+                // resourceValues 실패 = 로컬 파일일 수 있음
+                downloadedCount += 1
+                continue
+            }
+
+            if let status = values.ubiquitousItemDownloadingStatus {
+                switch status {
+                case .current, .downloaded:
+                    downloadedCount += 1
+                case .notDownloaded:
+                    break
+                default:
+                    downloadingCount += 1
+                }
+            } else {
+                // status가 nil = 로컬 파일
+                downloadedCount += 1
+            }
+        }
+
+        if downloadedCount == files.count { return .downloaded }
+        if downloadingCount > 0 { return .downloading }
+        return .notDownloaded
+    }
+
+    /// iCloud에서 Study의 DICOM 파일 다운로드 시작
+    /// - Returns: true if download was triggered, false if already local or failed
+    @discardableResult
+    static func startDownloading(study: Study) -> Bool {
+        guard let dirURL = dicomDirectoryURL(for: study) else { return false }
+        return startDownloadingDirectory(dirURL)
+    }
+
+    /// 디렉토리 내 모든 파일의 iCloud 다운로드를 트리거
+    @discardableResult
+    static func startDownloadingDirectory(_ dirURL: URL) -> Bool {
+        let fm = FileManager.default
+
+        // 디렉토리 자체 다운로드 시도
+        do {
+            try fm.startDownloadingUbiquitousItem(at: dirURL)
+        } catch {
+            print("[ChartStorage] startDownloading directory failed: \(error.localizedDescription)")
+        }
+
+        // 디렉토리 내 각 파일도 개별 다운로드 트리거
+        guard let files = try? fm.contentsOfDirectory(
+            at: dirURL, includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else { return false }
+
+        var triggered = false
+        for file in files {
+            do {
+                try fm.startDownloadingUbiquitousItem(at: file)
+                triggered = true
+            } catch {
+                // 이미 로컬이거나 에러 — 무시
+            }
+        }
+
+        print("[ChartStorage] Triggered download for \(files.count) files in \(dirURL.lastPathComponent)")
+        return triggered
+    }
+
+    /// USDZ 파일의 iCloud 다운로드를 트리거
+    @discardableResult
+    static func startDownloadingUSDZ(for study: Study) -> Bool {
+        guard let relPath = study.usdzFilePath, !relPath.isEmpty else { return false }
+        let url = documentsDirectory.appendingPathComponent(relPath)
+        do {
+            try FileManager.default.startDownloadingUbiquitousItem(at: url)
+            return true
+        } catch {
+            print("[ChartStorage] startDownloading USDZ failed: \(error.localizedDescription)")
+            return false
         }
     }
 

@@ -240,6 +240,13 @@ private struct StudyCard: View {
             }
 
             HStack(spacing: 4) {
+                if ChartStorage.isICloudAvailable,
+                   ChartStorage.downloadStatus(for: study) != .downloaded,
+                   ChartStorage.downloadStatus(for: study) != .local {
+                    Image(systemName: "icloud.and.arrow.down")
+                        .font(.caption2)
+                        .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
+                }
                 Text("\(study.imageCount) images")
                     .font(.caption2)
                     .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
@@ -295,6 +302,10 @@ private struct DICOMTabView: View {
     @State private var viewerHeight: CGFloat = 400
     @State private var dragStartHeight: CGFloat = 400
 
+    // iCloud 다운로드
+    @StateObject private var downloadMonitor = ICloudDownloadMonitor()
+    @State private var isDownloadingFromICloud = false
+
     // 측정
     @State private var measureMode: MeasureMode = .none
     @State private var currentPoints: [CGPoint] = []
@@ -323,7 +334,9 @@ private struct DICOMTabView: View {
                     ZStack {
                         Color.black
 
-                        if isLoading {
+                        if isDownloadingFromICloud {
+                            iCloudDownloadOverlay
+                        } else if isLoading {
                             ProgressView().tint(.white)
                         } else if let cgImage = sliceImage {
                             GeometryReader { geo in
@@ -411,7 +424,13 @@ private struct DICOMTabView: View {
             }
             .padding()
         }
-        .task { loadInitialSlice() }
+        .task { checkAndLoad() }
+        .onChange(of: downloadMonitor.state) { _, newState in
+            if case .completed = newState {
+                isDownloadingFromICloud = false
+                loadInitialSlice()
+            }
+        }
     }
 
     // MARK: - Measure Toolbar
@@ -526,6 +545,77 @@ private struct DICOMTabView: View {
             DispatchQueue.main.async { sliceImage = image }
         }
     }
+
+    // MARK: - iCloud Download
+
+    /// iCloud 다운로드 상태를 확인하고, 필요하면 다운로드 시작
+    private func checkAndLoad() {
+        let status = ChartStorage.downloadStatus(for: study)
+
+        switch status {
+        case .local, .downloaded:
+            // 이미 로컬에 있음 → 바로 로드
+            loadInitialSlice()
+
+        case .notDownloaded, .downloading:
+            // iCloud에서 다운로드 필요
+            isDownloadingFromICloud = true
+            isLoading = false
+            downloadMonitor.startMonitoring(study: study)
+        }
+    }
+
+    /// iCloud 다운로드 진행률 표시 오버레이
+    private var iCloudDownloadOverlay: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "icloud.and.arrow.down")
+                .font(.system(size: 36))
+                .foregroundColor(.white.opacity(0.8))
+                .symbolEffect(.pulse)
+
+            Text("iCloud에서 다운로드 중...")
+                .font(.callout)
+                .foregroundColor(.white.opacity(0.9))
+
+            switch downloadMonitor.state {
+            case .downloading(let progress, let downloaded, let total):
+                VStack(spacing: 8) {
+                    ProgressView(value: progress)
+                        .progressViewStyle(.linear)
+                        .tint(.cyan)
+                        .frame(width: 200)
+
+                    Text("\(downloaded) / \(total) files")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.6))
+                        .monospacedDigit()
+                }
+
+            case .checking:
+                ProgressView()
+                    .tint(.white)
+
+            case .failed(let message):
+                VStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.icloud")
+                        .font(.title2)
+                        .foregroundColor(.orange)
+                    Text(message)
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                    Button("Retry") {
+                        downloadMonitor.startMonitoring(study: study)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.white)
+                }
+
+            default:
+                ProgressView()
+                    .tint(.white)
+            }
+        }
+    }
 }
 
 // MARK: - Volume Tab
@@ -542,6 +632,10 @@ private struct VolumeTabView: View {
     @State private var opacityScale: Double = 1.0
     @State private var viewerHeight: CGFloat = 400
     @State private var dragStartHeight: CGFloat = 400
+
+    // iCloud 다운로드
+    @StateObject private var downloadMonitor = ICloudDownloadMonitor()
+    @State private var isDownloadingFromICloud = false
 
     var body: some View {
         ScrollView {
@@ -606,6 +700,10 @@ private struct VolumeTabView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: viewerHeight)
+                    } else if isDownloadingFromICloud {
+                        volumeDownloadOverlay
+                            .frame(maxWidth: .infinity)
+                            .frame(height: viewerHeight)
                     } else if isLoading {
                         VStack(spacing: 12) {
                             ProgressView().scaleEffect(1.5)
@@ -628,7 +726,27 @@ private struct VolumeTabView: View {
             }
             .padding()
         }
-        .task { loadVolume() }
+        .task { checkAndLoadVolume() }
+        .onChange(of: downloadMonitor.state) { _, newState in
+            if case .completed = newState {
+                isDownloadingFromICloud = false
+                loadVolume()
+            }
+        }
+    }
+
+    /// iCloud 다운로드 상태를 확인하고, 필요하면 다운로드 시작
+    private func checkAndLoadVolume() {
+        let status = ChartStorage.downloadStatus(for: study)
+
+        switch status {
+        case .local, .downloaded:
+            loadVolume()
+        case .notDownloaded, .downloading:
+            isDownloadingFromICloud = true
+            isLoading = false
+            downloadMonitor.startMonitoring(study: study)
+        }
     }
 
     private func loadVolume() {
@@ -648,6 +766,36 @@ private struct VolumeTabView: View {
                 loadFailed = true
             }
             isLoading = false
+        }
+    }
+
+    /// iCloud 다운로드 진행률 표시 (Volume 탭)
+    private var volumeDownloadOverlay: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "icloud.and.arrow.down")
+                .font(.system(size: 36))
+                .foregroundColor(.secondary)
+                .symbolEffect(.pulse)
+
+            Text("iCloud에서 다운로드 중...")
+                .font(.callout)
+                .foregroundColor(.secondary)
+
+            if case .downloading(let progress, let downloaded, let total) = downloadMonitor.state {
+                VStack(spacing: 8) {
+                    ProgressView(value: progress)
+                        .progressViewStyle(.linear)
+                        .tint(.accentColor)
+                        .frame(width: 200)
+
+                    Text("\(downloaded) / \(total) files")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .monospacedDigit()
+                }
+            } else {
+                ProgressView()
+            }
         }
     }
 }
@@ -838,6 +986,14 @@ private struct USDZTabView: View {
     private func generateUSDZ() {
         guard let dirURL = ChartStorage.dicomDirectoryURL(for: study) else {
             errorMessage = "DICOM directory not found."; return
+        }
+
+        // iCloud 다운로드 상태 확인
+        let status = ChartStorage.directoryDownloadStatus(dirURL)
+        if status == .notDownloaded || status == .downloading {
+            errorMessage = "DICOM files are still downloading from iCloud. Please wait."
+            ChartStorage.startDownloadingDirectory(dirURL)
+            return
         }
 
         isGenerating = true
