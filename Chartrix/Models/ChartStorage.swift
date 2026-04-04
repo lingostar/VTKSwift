@@ -1,7 +1,7 @@
 import Foundation
 
 /// iCloud 컨테이너 식별자
-private let iCloudContainerID = "iCloud.com.codershigh.Chartrix"
+private let iCloudContainerID = "iCloud.codershigh.Chartrix"
 
 /// DICOM 파일을 iCloud Documents(또는 로컬 Documents)에 복사/관리하는 헬퍼
 enum ChartStorage {

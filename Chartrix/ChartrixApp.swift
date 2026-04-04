@@ -10,7 +10,7 @@ struct ChartrixApp: App {
             let schema = Schema([Chart.self, Study.self, Measurement.self, Note.self])
             let config = ModelConfiguration(
                 schema: schema,
-                cloudKitDatabase: .private("iCloud.com.codershigh.Chartrix")
+                cloudKitDatabase: .private("iCloud.codershigh.Chartrix")
             )
             modelContainer = try ModelContainer(for: schema, configurations: [config])
         } catch {
