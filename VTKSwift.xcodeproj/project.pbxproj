@@ -411,13 +411,13 @@
 						DevelopmentTeam = 4QG3GC35LA;
 					};
 					4C1827ED9018A1D4667358C8 = {
-						DevelopmentTeam = 4QG3GC35LA;
+						DevelopmentTeam = RN98M5L7WM;
 					};
 					9DB5E511F82CBD2FC23E325C = {
 						DevelopmentTeam = 4QG3GC35LA;
 					};
 					B91B55006FF5BFE7E5083DB2 = {
-						DevelopmentTeam = 4QG3GC35LA;
+						DevelopmentTeam = RN98M5L7WM;
 					};
 				};
 			};
@@ -727,6 +727,7 @@
 				CODE_SIGN_ENTITLEMENTS = Chartrix/Chartrix.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RN98M5L7WM;
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/vtk-install/macos-arm64/include/vtk-9.4",
@@ -826,6 +827,7 @@
 				CODE_SIGN_ENTITLEMENTS = Chartrix/Chartrix.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RN98M5L7WM;
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/vtk-install/macos-arm64/include/vtk-9.4",
@@ -963,6 +965,7 @@
 				CODE_SIGN_ENTITLEMENTS = Chartrix/Chartrix.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RN98M5L7WM;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				GENERATE_INFOPLIST_FILE = YES;
 				"HEADER_SEARCH_PATHS[sdk=iphoneos*]" = (
@@ -1025,6 +1028,7 @@
 				CODE_SIGN_ENTITLEMENTS = Chartrix/Chartrix.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RN98M5L7WM;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				GENERATE_INFOPLIST_FILE = YES;
 				"HEADER_SEARCH_PATHS[sdk=iphoneos*]" = (

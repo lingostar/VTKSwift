@@ -100,6 +100,7 @@ targets:
         buildPhase: sources
     settings:
       base:
+        DEVELOPMENT_TEAM: RN98M5L7WM
         PRODUCT_BUNDLE_IDENTIFIER: com.codershigh.Chartrix
         PRODUCT_NAME: Chartrix
         GENERATE_INFOPLIST_FILE: true
@@ -172,6 +173,7 @@ targets:
         buildPhase: sources
     settings:
       base:
+        DEVELOPMENT_TEAM: RN98M5L7WM
         PRODUCT_BUNDLE_IDENTIFIER: com.codershigh.Chartrix
         PRODUCT_NAME: Chartrix
         GENERATE_INFOPLIST_FILE: true
