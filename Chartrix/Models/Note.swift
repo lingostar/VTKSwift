@@ -4,16 +4,15 @@ import Foundation
 /// 의사의 환자 노트 — Chart별 여러 개, 선택적으로 Study 참조
 @Model
 final class Note {
-    var title: String
-    var content: String
-    var createdDate: Date
-    var updatedDate: Date
+    // CloudKit: 모든 속성에 기본값 필수
+    var title: String = ""
+    var content: String = ""
+    var createdDate: Date = Date()
+    var updatedDate: Date = Date()
 
-    @Relationship(inverse: \Chart.doctorNotes)
     var chart: Chart?
 
-    /// 특정 Study와 연관된 노트 (선택)
-    @Relationship
+    /// 특정 Study와 연관된 노트 (선택) — inverse: Study.notes
     var study: Study?
 
     init(

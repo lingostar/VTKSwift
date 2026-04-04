@@ -5,21 +5,21 @@ import CoreGraphics
 /// DICOM 슬라이스 위의 측정 결과 (거리/각도) — Study별 영구 저장
 @Model
 final class Measurement {
+    // CloudKit: 모든 속성에 기본값 필수
     /// "distance" or "angle"
-    var measureType: String
+    var measureType: String = "distance"
 
     /// 측정이 수행된 슬라이스 인덱스
-    var sliceIndex: Int
+    var sliceIndex: Int = 0
 
     /// 정규화 좌표 (0…1) 배열을 JSON 인코딩한 데이터
-    var pointsData: Data
+    var pointsData: Data = Data()
 
     /// 측정 값 (mm 또는 degrees)
-    var value: Double
+    var value: Double = 0.0
 
-    var createdDate: Date
+    var createdDate: Date = Date()
 
-    @Relationship(inverse: \Study.measurements)
     var study: Study?
 
     init(

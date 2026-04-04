@@ -5,15 +5,16 @@ import SwiftUI
 /// 환자 차트 — 한 환자에 여러 Study(CT/MRI 등)를 관리
 @Model
 final class Chart {
-    var alias: String
-    var notes: String
-    var createdDate: Date
-    var updatedDate: Date
+    // CloudKit: 모든 속성에 기본값 필수
+    var alias: String = ""
+    var notes: String = ""
+    var createdDate: Date = Date()
+    var updatedDate: Date = Date()
 
-    @Relationship(deleteRule: .cascade)
+    @Relationship(deleteRule: .cascade, inverse: \Study.chart)
     var studies: [Study]?
 
-    @Relationship(deleteRule: .cascade)
+    @Relationship(deleteRule: .cascade, inverse: \Note.chart)
     var doctorNotes: [Note]?
 
     init(
@@ -32,10 +33,11 @@ final class Chart {
 /// 개별 DICOM Study — CT/MRI/US 한 세트
 @Model
 final class Study {
-    var modality: String          // CT, MRI, Ultrasound
-    var imageCount: Int
-    var studyDescription: String
-    var studyDate: String         // YYYYMMDD (DICOM에서 읽음)
+    // CloudKit: 모든 속성에 기본값 필수
+    var modality: String = "CT"
+    var imageCount: Int = 0
+    var studyDescription: String = ""
+    var studyDate: String = ""
 
     /// DICOM 파일 경로 (Documents 기준 상대 경로)
     var dicomDirectoryPath: String?
@@ -43,13 +45,16 @@ final class Study {
     /// USDZ 파일 경로
     var usdzFilePath: String?
 
-    var createdDate: Date
+    var createdDate: Date = Date()
 
-    @Relationship(inverse: \Chart.studies)
     var chart: Chart?
 
-    @Relationship(deleteRule: .cascade)
+    @Relationship(deleteRule: .cascade, inverse: \Measurement.study)
     var measurements: [Measurement]?
+
+    /// Note에서 참조하는 inverse (Note.study → Study.notes)
+    @Relationship(deleteRule: .nullify, inverse: \Note.study)
+    var notes: [Note]?
 
     init(
         modality: String = "CT",
