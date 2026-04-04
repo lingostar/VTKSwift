@@ -125,6 +125,10 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
         INFOPLIST_KEY_UISupportsFullScreen: false
 
+        # --- Background modes (required for CloudKit push sync) ---
+        INFOPLIST_KEY_UIBackgroundModes:
+          - remote-notification
+
         # --- Export compliance (no custom encryption) ---
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: false
 

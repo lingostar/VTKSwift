@@ -4,6 +4,7 @@ import SwiftData
 struct ContentView: View {
     @State private var selectedChart: Chart?
     @State private var didMigrate = false
+    @StateObject private var syncMonitor = CloudSyncMonitor()
 
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -22,6 +23,7 @@ struct ContentView: View {
             #endif
         }
         .onAppear { migrateToICloudOnce() }
+        .environmentObject(syncMonitor)
     }
 
     // MARK: - iPad / Mac: NavigationSplitView
@@ -68,6 +70,7 @@ struct ContentView: View {
 
 private struct ChartSplitListView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var syncMonitor: CloudSyncMonitor
     @Query(sort: \Chart.updatedDate, order: .reverse) private var charts: [Chart]
     @Binding var selectedChart: Chart?
 
@@ -83,25 +86,55 @@ private struct ChartSplitListView: View {
     }
 
     var body: some View {
-        List(filteredCharts, selection: $selectedChart) { chart in
-            ChartRowView(chart: chart)
-                .tag(chart)
-                .contextMenu {
-                    Button(role: .destructive) {
-                        deleteChart(chart)
-                    } label: {
-                        Label("Delete Patient", systemImage: "trash")
+        List(selection: $selectedChart) {
+            // 동기화 배너
+            if syncMonitor.isSyncing {
+                HStack(spacing: 10) {
+                    Image(systemName: "icloud.and.arrow.down")
+                        .foregroundColor(.accentColor)
+                        .symbolEffect(.pulse)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("iCloud 동기화 중")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                        Text("새로운 데이터가 도착할 수 있습니다")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                     }
+                    Spacer()
                 }
+                .padding(.vertical, 4)
+                .listRowBackground(Color.accentColor.opacity(0.06))
+            }
+
+            ForEach(filteredCharts) { chart in
+                ChartRowView(chart: chart)
+                    .tag(chart)
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            deleteChart(chart)
+                        } label: {
+                            Label("Delete Patient", systemImage: "trash")
+                        }
+                    }
+            }
         }
         .listStyle(.plain)
         .navigationTitle("Chart")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showNewChart = true
-                } label: {
-                    Image(systemName: "plus")
+                HStack(spacing: 12) {
+                    if syncMonitor.isSyncing {
+                        Image(systemName: "icloud.and.arrow.down")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .symbolEffect(.pulse)
+                    }
+                    Button {
+                        showNewChart = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
                 }
             }
         }
@@ -139,4 +172,5 @@ private struct ChartSplitListView: View {
 #Preview {
     ContentView()
         .modelContainer(for: [Chart.self, Study.self, Measurement.self, Note.self], inMemory: true)
+        .environmentObject(CloudSyncMonitor())
 }
