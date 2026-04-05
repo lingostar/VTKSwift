@@ -36,7 +36,6 @@
             margin-bottom: 1.5rem;
             cursor: pointer;
         }
-        .section-ko { display: none; }
         footer {
             margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #1e3a4a;
             font-size: 0.85rem; color: #607078;
@@ -177,6 +176,11 @@
                 ko.style.display = 'block';
             }
         }
+        // Initial state: English visible, Korean hidden
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('en').style.display = 'block';
+            document.getElementById('ko').style.display = 'none';
+        });
     </script>
 </body>
 </html>

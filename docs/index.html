@@ -67,7 +67,6 @@
             border-top: 1px solid #1e3040;
             font-size: 0.85rem; color: #506068;
         }
-        .section-ko { display: none; }
     </style>
 </head>
 <body>
@@ -173,25 +172,33 @@
     </footer>
 
     <script>
-        function toggleLang() {
+        let currentLang = 'en';
+
+        function showLang(lang) {
+            currentLang = lang;
             const enSections = document.querySelectorAll('.section-en');
             const koSections = document.querySelectorAll('.section-ko');
             const taglineEn = document.getElementById('tagline-en');
             const taglineKo = document.getElementById('tagline-ko');
 
-            const isEnVisible = enSections[0].style.display !== 'none';
-
-            enSections.forEach(el => el.style.display = isEnVisible ? 'none' : '');
-            koSections.forEach(el => el.style.display = isEnVisible ? '' : 'none');
-            taglineEn.style.display = isEnVisible ? 'none' : '';
-            taglineKo.style.display = isEnVisible ? '' : 'none';
+            if (lang === 'en') {
+                enSections.forEach(el => { el.style.display = el.classList.contains('features') ? 'grid' : 'block'; });
+                koSections.forEach(el => { el.style.display = 'none'; });
+                taglineEn.style.display = 'block';
+                taglineKo.style.display = 'none';
+            } else {
+                enSections.forEach(el => { el.style.display = 'none'; });
+                koSections.forEach(el => { el.style.display = el.classList.contains('features') ? 'grid' : 'block'; });
+                taglineEn.style.display = 'none';
+                taglineKo.style.display = 'block';
+            }
         }
 
-        // Ensure correct initial state
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.section-en').forEach(el => el.style.display = '');
-            document.querySelectorAll('.section-ko').forEach(el => el.style.display = 'none');
-        });
+        function toggleLang() {
+            showLang(currentLang === 'en' ? 'ko' : 'en');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => showLang('en'));
     </script>
 </body>
 </html>
