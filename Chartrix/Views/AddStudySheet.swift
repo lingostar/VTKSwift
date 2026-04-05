@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 기존 환자에 새 Study(DICOM) 추가
+/// Add new Study (DICOM) to existing patient
 struct AddStudySheet: View {
     let chart: Chart
 
@@ -12,7 +12,7 @@ struct AddStudySheet: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    // 메타데이터 필드 선택
+    // Metadata field selection
     @State private var includeStudyDescription = true
     @State private var includeStudyDate = true
     @State private var includePatientAge = true
@@ -23,7 +23,7 @@ struct AddStudySheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                // 환자 정보 (읽기 전용)
+                // Patient info (read-only)
                 Section {
                     HStack {
                         Label {
@@ -43,7 +43,7 @@ struct AddStudySheet: View {
                     Text("Patient")
                 }
 
-                // DICOM 선택
+                // DICOM selection
                 Section {
                     Button {
                         showFolderPicker = true
@@ -84,7 +84,7 @@ struct AddStudySheet: View {
                     Text("Select a folder containing DICOM files (.dcm).")
                 }
 
-                // 메타데이터 선택
+                // Metadata selection
                 if let info = dicomInfo {
                     Section {
                         metadataFixedRow("Modality", value: info.displayModality, icon: modalityIcon(info.modality))

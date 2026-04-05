@@ -1,10 +1,10 @@
 import SwiftData
 import Foundation
 
-/// 의사의 환자 노트 — Chart별 여러 개, 선택적으로 Study 참조
+/// Doctor's patient note — multiple per Chart, optionally linked to a Study
 @Model
 final class Note {
-    // CloudKit: 모든 속성에 기본값 필수
+    // CloudKit: all attributes must have default values
     var title: String = ""
     var content: String = ""
     var createdDate: Date = Date()
@@ -12,7 +12,7 @@ final class Note {
 
     var chart: Chart?
 
-    /// 특정 Study와 연관된 노트 (선택) — inverse: Study.notes
+    /// Note linked to a specific Study (optional) — inverse: Study.notes
     var study: Study?
 
     init(
@@ -39,7 +39,7 @@ extension Note {
         Self.dateFormatter.string(from: updatedDate)
     }
 
-    /// 노트 미리보기 (첫 줄 또는 100자)
+    /// Note preview (first line or 100 characters)
     var preview: String {
         let text = content.trimmingCharacters(in: .whitespacesAndNewlines)
         if text.isEmpty { return "Empty note" }

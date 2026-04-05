@@ -10,7 +10,7 @@ enum ViewerTab: String, CaseIterable {
 
 // MARK: - Chart Detail View
 
-/// 차트 상세 — Study 캐러셀 + 세그먼트 뷰어
+/// Chart detail — Study carousel + segmented viewer
 struct ChartDetailView: View {
     let chart: Chart
 
@@ -23,10 +23,10 @@ struct ChartDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Study 캐러셀 (항상 표시 — + 카드 포함)
+            // Study carousel (always visible — includes + card)
             studyCarousel
 
-            // 세그먼트 컨트롤
+            // Segment control
             Picker("Viewer", selection: $selectedTab) {
                 ForEach(ViewerTab.allCases, id: \.self) { tab in
                     Text(tab.rawValue).tag(tab)
@@ -36,7 +36,7 @@ struct ChartDetailView: View {
             .padding(.horizontal)
             .padding(.top, 4)
 
-            // 뷰어 영역
+            // Viewer area
             if let study = selectedStudy {
                 switch selectedTab {
                 case .dicom:
@@ -128,7 +128,7 @@ struct ChartDetailView: View {
                     }
                 }
 
-                // + 카드 (새 Study 추가)
+                // + card (add new Study)
                 addStudyCard
             }
             .padding(.horizontal)
@@ -167,15 +167,15 @@ struct ChartDetailView: View {
     // MARK: - Actions
 
     private func deleteStudy(_ study: Study) {
-        // 파일 삭제
+        // Delete files
         if let dirPath = study.dicomDirectoryPath {
             let dirURL = ChartStorage.documentsDirectory.appendingPathComponent(dirPath)
-            // DICOM 폴더의 상위 (studyDate_modality 폴더) 삭제
+            // Delete parent of DICOM folder (studyDate_modality folder)
             let studyFolderURL = dirURL.deletingLastPathComponent()
             try? FileManager.default.removeItem(at: studyFolderURL)
         }
 
-        // 선택 해제
+        // Deselect
         if selectedStudy?.id == study.id {
             selectedStudy = chart.sortedStudies.first(where: { $0.id != study.id })
         }
@@ -191,7 +191,7 @@ struct ChartDetailView: View {
         try? modelContext.save()
     }
 
-    /// USDZ 파일이 없으면 백그라운드에서 자동 생성
+    /// Auto-generate USDZ in background if none exists
     private func ensureUSDZExists() {
         for study in (chart.studies ?? []) {
             if let rel = study.usdzFilePath, !rel.isEmpty {
@@ -203,7 +203,7 @@ struct ChartDetailView: View {
     }
 }
 
-// MARK: - Study Card (캐러셀 카드)
+// MARK: - Study Card (carousel card)
 
 private struct StudyCard: View {
     let study: Study
@@ -222,7 +222,7 @@ private struct StudyCard: View {
 
                 Spacer()
 
-                // ... 메뉴
+                // ... menu
                 Menu {
                     Button(role: .destructive) {
                         showDeleteAlert = true
@@ -290,7 +290,7 @@ private struct StudyCard: View {
 
 // MARK: - DICOM Tab
 
-/// DICOM 2D 슬라이스 뷰어 + 측정 도구
+/// DICOM 2D slice viewer + measurement tools
 private struct DICOMTabView: View {
     let study: Study
 
@@ -302,15 +302,15 @@ private struct DICOMTabView: View {
     @State private var viewerHeight: CGFloat = 400
     @State private var dragStartHeight: CGFloat = 400
 
-    // iCloud 다운로드
+    // iCloud download
     @StateObject private var downloadMonitor = ICloudDownloadMonitor()
     @State private var isDownloadingFromICloud = false
 
-    // 측정
+    // Measurement
     @State private var measureMode: MeasureMode = .none
     @State private var currentPoints: [CGPoint] = []
 
-    /// 현재 슬라이스의 저장된 측정 결과
+    /// Saved measurements for current slice
     var currentMeasurements: [Measurement] {
         let slice = Int(currentSlice)
         return (study.measurements ?? [])
@@ -318,7 +318,7 @@ private struct DICOMTabView: View {
             .sorted { $0.createdDate < $1.createdDate }
     }
 
-    /// MeasureOverlay에 전달할 MeasureResult 변환
+    /// Convert to MeasureResult for MeasureOverlay
     var currentMeasureResults: [MeasureResult] {
         currentMeasurements.map { m in
             MeasureResult(type: m.mode, points: m.points, value: m.value)
@@ -328,9 +328,9 @@ private struct DICOMTabView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 8) {
-                // Viewer 박스: 이미지 + 컨트롤 + 리사이즈 핸들
+                // Viewer box: image + controls + resize handle
                 VStack(spacing: 0) {
-                    // CT 이미지 + 측정 오버레이
+                    // CT image + measurement overlay
                     ZStack {
                         Color.black
 
@@ -375,12 +375,12 @@ private struct DICOMTabView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: viewerHeight)
 
-                    // 컨트롤 영역
+                    // Controls area
                     VStack(spacing: 8) {
-                        // 측정 툴바
+                        // Measurement toolbar
                         measureToolbar
 
-                        // 슬라이스 슬라이더
+                        // Slice slider
                         if totalSlices > 1 {
                             VStack(spacing: 4) {
                                 Slider(value: $currentSlice,
@@ -405,7 +405,7 @@ private struct DICOMTabView: View {
                     .padding(.vertical, 8)
                     .background(.ultraThinMaterial)
 
-                    // 리사이즈 핸들
+                    // Resize handle
                     ViewerResizeHandle(viewerHeight: $viewerHeight, dragStartHeight: $dragStartHeight)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -414,7 +414,7 @@ private struct DICOMTabView: View {
                         .stroke(Color.accentColor.opacity(0.5), lineWidth: 2)
                 )
 
-                // 측정 결과
+                // Measurement results
                 if !currentMeasurements.isEmpty {
                     measureResults
                 }
@@ -497,7 +497,7 @@ private struct DICOMTabView: View {
                         .font(.caption)
                         .monospacedDigit()
                     Spacer()
-                    // 개별 삭제 버튼
+                    // Individual delete button
                     Button {
                         modelContext.delete(measurement)
                         try? modelContext.save()
@@ -510,7 +510,7 @@ private struct DICOMTabView: View {
                 }
             }
 
-            Text("Reference only — 참고용 측정값")
+            Text("Reference only — measurements are for informational purposes")
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
@@ -548,24 +548,24 @@ private struct DICOMTabView: View {
 
     // MARK: - iCloud Download
 
-    /// iCloud 다운로드 상태를 확인하고, 필요하면 다운로드 시작
+    /// Check iCloud download status and start download if needed
     private func checkAndLoad() {
         let status = ChartStorage.downloadStatus(for: study)
 
         switch status {
         case .local, .downloaded:
-            // 이미 로컬에 있음 → 바로 로드
+            // Already local → load immediately
             loadInitialSlice()
 
         case .notDownloaded, .downloading:
-            // iCloud에서 다운로드 필요
+            // Needs download from iCloud
             isDownloadingFromICloud = true
             isLoading = false
             downloadMonitor.startMonitoring(study: study)
         }
     }
 
-    /// iCloud 다운로드 진행률 표시 오버레이
+    /// iCloud download progress overlay
     private var iCloudDownloadOverlay: some View {
         VStack(spacing: 16) {
             Image(systemName: "icloud.and.arrow.down")
@@ -573,7 +573,7 @@ private struct DICOMTabView: View {
                 .foregroundColor(.white.opacity(0.8))
                 .symbolEffect(.pulse)
 
-            Text("iCloud에서 다운로드 중...")
+            Text("Downloading from iCloud...")
                 .font(.callout)
                 .foregroundColor(.white.opacity(0.9))
 
@@ -620,7 +620,7 @@ private struct DICOMTabView: View {
 
 // MARK: - Volume Tab
 
-/// VTK 3D 볼륨 렌더링
+/// VTK 3D volume rendering
 private struct VolumeTabView: View {
     let study: Study
 
@@ -633,14 +633,14 @@ private struct VolumeTabView: View {
     @State private var viewerHeight: CGFloat = 400
     @State private var dragStartHeight: CGFloat = 400
 
-    // iCloud 다운로드
+    // iCloud download
     @StateObject private var downloadMonitor = ICloudDownloadMonitor()
     @State private var isDownloadingFromICloud = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: 8) {
-                // Viewer 박스: 렌더뷰 + 컨트롤 + 리사이즈 핸들
+                // Viewer box: render view + controls + resize handle
                 VStack(spacing: 0) {
                     if isLoaded {
                         VolumeRenderWrap(bridge: $bridge)
@@ -713,7 +713,7 @@ private struct VolumeTabView: View {
                         .frame(height: viewerHeight)
                     }
 
-                    // 리사이즈 핸들
+                    // Resize handle
                     ViewerResizeHandle(viewerHeight: $viewerHeight, dragStartHeight: $dragStartHeight)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -735,7 +735,7 @@ private struct VolumeTabView: View {
         }
     }
 
-    /// iCloud 다운로드 상태를 확인하고, 필요하면 다운로드 시작
+    /// Check iCloud download status and start download if needed
     private func checkAndLoadVolume() {
         let status = ChartStorage.downloadStatus(for: study)
 
@@ -769,7 +769,7 @@ private struct VolumeTabView: View {
         }
     }
 
-    /// iCloud 다운로드 진행률 표시 (Volume 탭)
+    /// iCloud download progress overlay (Volume tab)
     private var volumeDownloadOverlay: some View {
         VStack(spacing: 16) {
             Image(systemName: "icloud.and.arrow.down")
@@ -777,7 +777,7 @@ private struct VolumeTabView: View {
                 .foregroundColor(.secondary)
                 .symbolEffect(.pulse)
 
-            Text("iCloud에서 다운로드 중...")
+            Text("Downloading from iCloud...")
                 .font(.callout)
                 .foregroundColor(.secondary)
 
@@ -802,7 +802,7 @@ private struct VolumeTabView: View {
 
 // MARK: - USDZ Tab
 
-/// USDZ 생성/프리뷰 — HU Threshold, 프리셋, Decimation, Smooth
+/// USDZ generation/preview — HU Threshold, presets, Decimation, Smooth
 private struct USDZTabView: View {
     let study: Study
     let chartAlias: String
@@ -817,13 +817,16 @@ private struct USDZTabView: View {
     @State private var errorMessage: String?
     @State private var viewerHeight: CGFloat = 400
     @State private var dragStartHeight: CGFloat = 400
+    #if os(iOS)
+    @State private var showARQuickLook = false
+    #endif
 
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                // Viewer 박스: 3D뷰 + 컨트롤 + Regenerate + 리사이즈 핸들
+                // Viewer box: 3D view + controls + Regenerate + resize handle
                 VStack(spacing: 0) {
-                    // 3D 미리보기 영역
+                    // 3D preview area
                     ZStack {
                         RoundedRectangle(cornerRadius: 0)
                             .fill(Color.gray.opacity(0.05))
@@ -834,11 +837,7 @@ private struct USDZTabView: View {
                                 Text("Generating 3D model...").font(.callout).foregroundColor(.secondary)
                             }
                         } else if let url = exportedURL, FileManager.default.fileExists(atPath: url.path) {
-                            #if os(iOS)
-                            USDZQuickLookView(fileURL: url)
-                            #else
                             USDZSceneView(fileURL: url)
-                            #endif
                         } else {
                             VStack(spacing: 8) {
                                 Image(systemName: "cube.transparent")
@@ -852,7 +851,7 @@ private struct USDZTabView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: viewerHeight)
 
-                    // 컨트롤 영역
+                    // Controls area
                     VStack(spacing: 8) {
                         // HU Threshold
                         VStack(spacing: 4) {
@@ -925,6 +924,15 @@ private struct USDZTabView: View {
                             .disabled(isGenerating)
 
                             if let url = exportedURL {
+                                #if os(iOS)
+                                Button {
+                                    showARQuickLook = true
+                                } label: {
+                                    Label("AR", systemImage: "arkit")
+                                }
+                                .buttonStyle(.bordered)
+                                #endif
+
                                 #if os(macOS)
                                 Button {
                                     NSWorkspace.shared.activateFileViewerSelecting([url])
@@ -950,7 +958,7 @@ private struct USDZTabView: View {
                     .padding(.vertical, 8)
                     .background(.ultraThinMaterial)
 
-                    // 리사이즈 핸들 (박스 맨 아래)
+                    // Resize handle (bottom of box)
                     ViewerResizeHandle(viewerHeight: $viewerHeight, dragStartHeight: $dragStartHeight)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -959,7 +967,7 @@ private struct USDZTabView: View {
                         .stroke(Color.accentColor.opacity(0.5), lineWidth: 2)
                 )
 
-                Text("Reference Only — 이 모델은 참고용이며 진단 목적이 아닙니다.")
+                Text("Reference Only — This model is for reference purposes, not for clinical diagnosis.")
                     .font(.caption2).foregroundColor(.secondary)
 
                 // Info
@@ -968,9 +976,16 @@ private struct USDZTabView: View {
             .padding()
         }
         .onAppear { loadPreGeneratedUSDZ() }
+        #if os(iOS)
+        .fullScreenCover(isPresented: $showARQuickLook) {
+            if let url = exportedURL {
+                ARQuickLookSheet(fileURL: url)
+            }
+        }
+        #endif
     }
 
-    /// 이미 생성된 USDZ가 있으면 로드
+    /// Load pre-generated USDZ if available
     private func loadPreGeneratedUSDZ() {
         guard exportedURL == nil,
               let relPath = study.usdzFilePath, !relPath.isEmpty else { return }
@@ -988,7 +1003,7 @@ private struct USDZTabView: View {
             errorMessage = "DICOM directory not found."; return
         }
 
-        // iCloud 다운로드 상태 확인
+        // Check iCloud download status
         let status = ChartStorage.directoryDownloadStatus(dirURL)
         if status == .notDownloaded || status == .downloading {
             errorMessage = "DICOM files are still downloading from iCloud. Please wait."
@@ -1138,7 +1153,7 @@ enum USDZTissuePreset: String, CaseIterable, Identifiable {
 
 // MARK: - Viewer Resize Handle
 
-/// 뷰어 영역 높이를 드래그로 조절하는 핸들
+/// Drag handle for adjusting viewer area height
 struct ViewerResizeHandle: View {
     @Binding var viewerHeight: CGFloat
     @Binding var dragStartHeight: CGFloat
@@ -1234,23 +1249,49 @@ private struct VolumeRenderWrap: NSViewRepresentable {
 }
 #endif
 
-// MARK: - USDZ Quick Look (iOS)
+// MARK: - AR Quick Look Sheet (iOS full-screen)
 
 #if os(iOS)
 import QuickLook
 
-struct USDZQuickLookView: UIViewControllerRepresentable {
+/// Full-screen AR Quick Look for USDZ files with a close button overlay
+struct ARQuickLookSheet: View {
+    let fileURL: URL
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            ARQuickLookRepresentable(fileURL: fileURL)
+                .ignoresSafeArea()
+
+            // Close button — always visible on top
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title)
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.white, .black.opacity(0.5))
+            }
+            .padding(.top, 12)
+            .padding(.trailing, 16)
+        }
+    }
+}
+
+/// UIViewControllerRepresentable wrapper for QLPreviewController
+private struct ARQuickLookRepresentable: UIViewControllerRepresentable {
     let fileURL: URL
 
     func makeUIViewController(context: Context) -> QLPreviewController {
         let vc = QLPreviewController()
         vc.dataSource = context.coordinator
+        // Hide default navigation bar to avoid conflicts
+        vc.navigationItem.rightBarButtonItem = nil
         return vc
     }
 
-    func updateUIViewController(_ vc: QLPreviewController, context: Context) {
-        vc.reloadData()
-    }
+    func updateUIViewController(_ vc: QLPreviewController, context: Context) {}
 
     func makeCoordinator() -> Coordinator { Coordinator(url: fileURL) }
 
@@ -1269,7 +1310,7 @@ struct USDZQuickLookView: UIViewControllerRepresentable {
 
 import SceneKit
 
-/// SCNView로 USDZ 파일을 3D 프리뷰 (마우스/터치로 회전 가능)
+/// 3D preview of USDZ file using SCNView (rotate with mouse/touch)
 struct USDZSceneView {
     let fileURL: URL
 }
@@ -1308,7 +1349,7 @@ extension USDZSceneView {
         guard let scene = try? SCNScene(url: fileURL) else { return }
         scnView.scene = scene
 
-        // 모델 바운딩 박스에 맞춰 카메라 자동 배치
+        // Auto-position camera to fit model bounding box
         let (minVec, maxVec) = scene.rootNode.boundingBox
         let center = SCNVector3(
             (minVec.x + maxVec.x) / 2,

@@ -37,7 +37,7 @@ enum MeasureMode: CaseIterable {
 struct MeasureResult: Identifiable {
     let id = UUID()
     let type: MeasureMode
-    let points: [CGPoint]   // 정규화 좌표 0...1
+    let points: [CGPoint]   // Normalized coordinates 0...1
     let value: Double        // mm or degrees
 
     var formattedValue: String {
@@ -51,7 +51,7 @@ struct MeasureResult: Identifiable {
 
 // MARK: - Measure Overlay
 
-/// DICOM 이미지 위에 거리/각도 측정을 위한 탭 오버레이
+/// Tap overlay for distance/angle measurement on DICOM images
 struct MeasureOverlay: View {
     let mode: MeasureMode
     @Binding var currentPoints: [CGPoint]
@@ -61,7 +61,7 @@ struct MeasureOverlay: View {
 
     var body: some View {
         ZStack {
-            // 탭 제스처 영역
+            // Tap gesture area
             if mode != .none {
                 Color.clear
                     .contentShape(Rectangle())
@@ -77,12 +77,12 @@ struct MeasureOverlay: View {
                     )
             }
 
-            // 기존 측정 결과 그리기
+            // Draw existing measurements
             ForEach(results) { result in
                 drawResult(result)
             }
 
-            // 진행 중인 포인트
+            // Points in progress
             ForEach(Array(currentPoints.enumerated()), id: \.offset) { idx, pt in
                 let screen = screenPoint(pt)
                 Circle()
@@ -91,9 +91,9 @@ struct MeasureOverlay: View {
                     .position(screen)
             }
 
-            // 진행 중인 선
+            // Lines in progress
             if mode == .distance, currentPoints.count == 1 {
-                // 첫 번째 점만 표시 (두 번째 대기)
+                // Only first point shown (waiting for second)
             }
         }
     }
@@ -113,12 +113,12 @@ struct MeasureOverlay: View {
     }
 
     private func calculateValue(mode: MeasureMode, points: [CGPoint]) -> Double {
-        // 간이 계산 — pixelSpacing 없이 픽셀 단위 (추후 DICOM에서 읽기)
+        // Simplified calculation — pixel units without pixelSpacing (read from DICOM later)
         switch mode {
         case .distance:
             let dx = (points[1].x - points[0].x) * viewSize.width
             let dy = (points[1].y - points[0].y) * viewSize.height
-            return sqrt(dx * dx + dy * dy) * 0.5 // 대략적 mm 환산
+            return sqrt(dx * dx + dy * dy) * 0.5 // Approximate mm conversion
         case .angle:
             let v1 = CGPoint(x: points[0].x - points[1].x, y: points[0].y - points[1].y)
             let v2 = CGPoint(x: points[2].x - points[1].x, y: points[2].y - points[1].y)

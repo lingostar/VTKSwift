@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// 환자 노트 목록 시트 — 노트 추가/편집/삭제
+/// Patient notes list sheet — add/edit/delete notes
 struct NotesListView: View {
     let chart: Chart
 

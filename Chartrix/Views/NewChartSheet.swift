@@ -4,7 +4,7 @@ import SwiftData
 import UIKit
 #endif
 
-/// 새 환자 추가 — Alias 입력 + DICOM 폴더 선택 → 메타데이터 확인 후 저장
+/// Add new patient — enter Alias + select DICOM folder → confirm metadata and save
 struct NewChartSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -17,7 +17,7 @@ struct NewChartSheet: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    // 메타데이터 필드 선택 상태
+    // Metadata field selection state
     @State private var includeStudyDescription = true
     @State private var includeSeriesDescription = true
     @State private var includeStudyDate = true

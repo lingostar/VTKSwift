@@ -2,20 +2,20 @@ import SwiftData
 import Foundation
 import CoreGraphics
 
-/// DICOM 슬라이스 위의 측정 결과 (거리/각도) — Study별 영구 저장
+/// Measurement result on DICOM slice (distance/angle) — persisted per Study
 @Model
 final class Measurement {
-    // CloudKit: 모든 속성에 기본값 필수
+    // CloudKit: all attributes must have default values
     /// "distance" or "angle"
     var measureType: String = "distance"
 
-    /// 측정이 수행된 슬라이스 인덱스
+    /// Slice index where measurement was performed
     var sliceIndex: Int = 0
 
-    /// 정규화 좌표 (0…1) 배열을 JSON 인코딩한 데이터
+    /// JSON-encoded array of normalized coordinates (0…1)
     var pointsData: Data = Data()
 
-    /// 측정 값 (mm 또는 degrees)
+    /// Measurement value (mm or degrees)
     var value: Double = 0.0
 
     var createdDate: Date = Date()
@@ -54,12 +54,12 @@ final class Measurement {
         }
     }
 
-    /// 디코딩된 포인트 배열
+    /// Decoded point array
     var points: [CGPoint] {
         Self.decode(pointsData)
     }
 
-    /// MeasureMode에 대응
+    /// Corresponds to MeasureMode
     var mode: MeasureMode {
         switch measureType {
         case "distance": return .distance
@@ -68,7 +68,7 @@ final class Measurement {
         }
     }
 
-    /// 포맷된 표시 값
+    /// Formatted display value
     var formattedValue: String {
         switch measureType {
         case "distance": return String(format: "%.1f mm", value)

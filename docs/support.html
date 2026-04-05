@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chartrix - Support / 지원</title>
+    <title>Chartrix - Support</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -24,7 +24,20 @@
         p, li { margin-bottom: 0.6rem; color: #c0d0d8; }
         ul { padding-left: 1.5rem; }
         a { color: #7fe0c0; }
-        .subtitle { font-size: 0.95rem; color: #8898a0; margin-bottom: 2rem; }
+        .subtitle { font-size: 0.95rem; color: #8898a0; margin-bottom: 0.8rem; }
+        .lang-toggle {
+            display: inline-block;
+            background: #1a3040;
+            border: 1px solid #2a4a5a;
+            border-radius: 8px;
+            padding: 0.3rem 0.8rem;
+            color: #7fe0c0;
+            text-decoration: none;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+        }
+        .section-ko { display: none; }
         .contact-box {
             background: #1a3040; border: 1px solid #2a4a5a; border-radius: 12px;
             padding: 1.2rem 1.5rem; margin-top: 1rem;
@@ -35,47 +48,106 @@
             margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #1e3a4a;
             font-size: 0.85rem; color: #607078;
         }
+        footer a { color: #607078; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Chartrix</h1>
-        <p class="subtitle">Support / 고객 지원</p>
+        <p class="subtitle">Support / FAQ</p>
+        <a class="lang-toggle" onclick="toggleLang()">한국어 / English</a>
 
-        <h2>자주 묻는 질문 (FAQ)</h2>
+        <!-- English -->
+        <div id="en" class="section-en">
+            <h2>Frequently Asked Questions</h2>
 
-        <h3>Q. DICOM 파일은 어떻게 가져오나요?</h3>
-        <p>앱에서 "+" 버튼을 눌러 새 차트를 만들고, DICOM 파일이 들어있는 폴더를 선택하세요. Files 앱 또는 AirDrop으로 iPhone/iPad에 DICOM 파일을 먼저 전송해야 합니다.</p>
+            <h3>Q. How do I import DICOM files?</h3>
+            <p>Tap the "+" button in the app to create a new chart, then select a folder containing your DICOM files. You may need to transfer the DICOM files to your iPhone or iPad first using the Files app or AirDrop.</p>
 
-        <h3>Q. 어떤 DICOM 파일을 지원하나요?</h3>
-        <p>CT, MRI, 초음파 등 표준 DICOM 형식 파일을 지원합니다. 단일 프레임 및 멀티 프레임 DICOM 모두 지원됩니다.</p>
+            <h3>Q. What DICOM files are supported?</h3>
+            <p>Chartrix supports standard DICOM format files including CT, MRI, and ultrasound. Both single-frame and multi-frame DICOM files are supported.</p>
 
-        <h3>Q. 3D 볼륨 렌더링이 안 보여요</h3>
-        <p>볼륨 렌더링은 충분한 수의 연속 슬라이스(30장 이상 권장)가 있는 CT 데이터에서 가장 잘 작동합니다. 단일 슬라이스이거나 슬라이스 수가 너무 적으면 3D 렌더링이 표시되지 않을 수 있습니다.</p>
+            <h3>Q. 3D volume rendering is not showing</h3>
+            <p>Volume rendering works best with CT data that has a sufficient number of consecutive slices (30 or more recommended). If there is only a single slice or too few slices, 3D rendering may not be displayed.</p>
 
-        <h3>Q. USDZ 모델을 어디에 사용할 수 있나요?</h3>
-        <p>생성된 USDZ 파일은 AR Quick Look으로 바로 보거나, 파일 앱으로 공유하여 3D 프린팅 소프트웨어나 Keynote/Pages 프레젠테이션에서 사용할 수 있습니다.</p>
+            <h3>Q. Where can I use USDZ models?</h3>
+            <p>Generated USDZ files can be viewed directly in AR Quick Look, or shared via the Files app for use in 3D printing software or Keynote/Pages presentations.</p>
 
-        <h3>Q. 내 데이터는 안전한가요?</h3>
-        <p>네. 모든 데이터는 기기 내에서만 저장되고 처리됩니다. 서버 전송, 클라우드 업로드가 전혀 없습니다. 앱 삭제 시 모든 데이터가 함께 삭제됩니다.</p>
+            <h3>Q. Is my data safe?</h3>
+            <p>Yes. All data is stored and processed on your device only. When iCloud is enabled, data syncs securely between your devices via your private iCloud account. There is no third-party server access. Deleting the app removes all local data.</p>
 
-        <h3>Q. 이 앱으로 진단할 수 있나요?</h3>
-        <p>아니요. Chartrix는 <strong>참조/열람 전용(Reference Only)</strong> 뷰어입니다. 임상 진단, 치료 결정에 사용할 수 없습니다. 모든 측정값과 렌더링은 참고 목적으로만 제공됩니다.</p>
+            <h3>Q. Does the app sync across devices?</h3>
+            <p>Yes. When signed into iCloud, your charts, studies, and DICOM files sync automatically across iPhone, iPad, and Mac. CloudKit handles metadata and iCloud Drive syncs the files.</p>
 
-        <h2>버그 리포트 & 기능 요청</h2>
-        <p>GitHub Issues 페이지에서 버그를 보고하거나 새 기능을 요청하실 수 있습니다:</p>
-        <p><a href="https://github.com/lingostar/Chartrix/issues" target="_blank">github.com/lingostar/Chartrix/issues</a></p>
+            <h3>Q. Can I use this app for diagnosis?</h3>
+            <p>No. Chartrix is a <strong>Reference Only</strong> viewer. It cannot be used for clinical diagnosis or treatment decisions. All measurements and renderings are provided for informational purposes only.</p>
 
-        <h2>연락처</h2>
-        <div class="contact-box">
-            <p><strong>개발자:</strong> 윤성관</p>
-            <p><strong>이메일:</strong> <a href="mailto:skyoon@g.postech.edu">skyoon@g.postech.edu</a></p>
-            <p><strong>팀:</strong> AcademyLingo</p>
+            <h2>Bug Reports &amp; Feature Requests</h2>
+            <p>You can report bugs or request new features on our GitHub Issues page:</p>
+            <p><a href="https://github.com/lingostar/Chartrix/issues" target="_blank">github.com/lingostar/Chartrix/issues</a></p>
+
+            <h2>Contact</h2>
+            <div class="contact-box">
+                <p><strong>Developer:</strong> Sungkwan Yoon</p>
+                <p><strong>Email:</strong> <a href="mailto:skyoon@g.postech.edu">skyoon@g.postech.edu</a></p>
+                <p><strong>Team:</strong> AcademyLingo</p>
+            </div>
+        </div>
+
+        <!-- 한국어 -->
+        <div id="ko" class="section-ko">
+            <h2>자주 묻는 질문 (FAQ)</h2>
+
+            <h3>Q. DICOM 파일은 어떻게 가져오나요?</h3>
+            <p>앱에서 "+" 버튼을 눌러 새 차트를 만들고, DICOM 파일이 들어있는 폴더를 선택하세요. Files 앱 또는 AirDrop으로 iPhone/iPad에 DICOM 파일을 먼저 전송해야 합니다.</p>
+
+            <h3>Q. 어떤 DICOM 파일을 지원하나요?</h3>
+            <p>CT, MRI, 초음파 등 표준 DICOM 형식 파일을 지원합니다. 단일 프레임 및 멀티 프레임 DICOM 모두 지원됩니다.</p>
+
+            <h3>Q. 3D 볼륨 렌더링이 안 보여요</h3>
+            <p>볼륨 렌더링은 충분한 수의 연속 슬라이스(30장 이상 권장)가 있는 CT 데이터에서 가장 잘 작동합니다. 단일 슬라이스이거나 슬라이스 수가 너무 적으면 3D 렌더링이 표시되지 않을 수 있습니다.</p>
+
+            <h3>Q. USDZ 모델을 어디에 사용할 수 있나요?</h3>
+            <p>생성된 USDZ 파일은 AR Quick Look으로 바로 보거나, 파일 앱으로 공유하여 3D 프린팅 소프트웨어나 Keynote/Pages 프레젠테이션에서 사용할 수 있습니다.</p>
+
+            <h3>Q. 내 데이터는 안전한가요?</h3>
+            <p>네. 모든 데이터는 기기 내에서 저장되고 처리됩니다. iCloud가 활성화된 경우, 사용자의 개인 iCloud 계정을 통해 기기 간 안전하게 동기화됩니다. 제3자 서버 접근은 없습니다. 앱 삭제 시 모든 로컬 데이터가 함께 삭제됩니다.</p>
+
+            <h3>Q. 기기 간 동기화가 되나요?</h3>
+            <p>네. iCloud에 로그인하면 차트, Study, DICOM 파일이 iPhone, iPad, Mac 간에 자동으로 동기화됩니다. CloudKit이 메타데이터를, iCloud Drive가 파일을 동기화합니다.</p>
+
+            <h3>Q. 이 앱으로 진단할 수 있나요?</h3>
+            <p>아니요. Chartrix는 <strong>참조/열람 전용(Reference Only)</strong> 뷰어입니다. 임상 진단, 치료 결정에 사용할 수 없습니다. 모든 측정값과 렌더링은 참고 목적으로만 제공됩니다.</p>
+
+            <h2>버그 리포트 &amp; 기능 요청</h2>
+            <p>GitHub Issues 페이지에서 버그를 보고하거나 새 기능을 요청하실 수 있습니다:</p>
+            <p><a href="https://github.com/lingostar/Chartrix/issues" target="_blank">github.com/lingostar/Chartrix/issues</a></p>
+
+            <h2>연락처</h2>
+            <div class="contact-box">
+                <p><strong>개발자:</strong> 윤성관</p>
+                <p><strong>이메일:</strong> <a href="mailto:skyoon@g.postech.edu">skyoon@g.postech.edu</a></p>
+                <p><strong>팀:</strong> AcademyLingo</p>
+            </div>
         </div>
 
         <footer>
-            <p>Chartrix by AcademyLingo | <a href="privacy.html">Privacy Policy</a></p>
+            <p>Chartrix by AcademyLingo | <a href="privacy.html">Privacy Policy</a> | <a href="index.html">Home</a></p>
         </footer>
     </div>
+
+    <script>
+        function toggleLang() {
+            const ko = document.getElementById('ko');
+            const en = document.getElementById('en');
+            if (en.style.display === 'none') {
+                en.style.display = 'block';
+                ko.style.display = 'none';
+            } else {
+                en.style.display = 'none';
+                ko.style.display = 'block';
+            }
+        }
+    </script>
 </body>
 </html>

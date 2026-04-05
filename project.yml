@@ -133,8 +133,8 @@ targets:
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: false
 
         # --- Privacy usage descriptions (folder picker for DICOM import) ---
-        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "DICOM 영상 파일을 사진 라이브러리에서 가져올 때 사용합니다."
-        INFOPLIST_KEY_NSDocumentsFolderUsageDescription: "DICOM 데이터를 저장하고 관리합니다."
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Used to import DICOM image files from the photo library."
+        INFOPLIST_KEY_NSDocumentsFolderUsageDescription: "Used to store and manage DICOM data."
 
         HEADER_SEARCH_PATHS[sdk=iphoneos*]:
           - "$(PROJECT_DIR)/vtk-install/ios-arm64/include/vtk-9.4"
@@ -190,6 +190,9 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_KEY_CFBundleDisplayName: Chartrix
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.medical"
+
+        # --- Export compliance (no custom encryption) ---
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: false
 
         HEADER_SEARCH_PATHS:
           - "$(PROJECT_DIR)/vtk-install/macos-arm64/include/vtk-9.4"

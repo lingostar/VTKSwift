@@ -1,10 +1,10 @@
 import Foundation
 import SceneKit
 
-/// DICOM 메쉬 데이터를 USDZ 파일로 변환
+/// Convert DICOM mesh data to USDZ file
 enum USDZGenerator {
 
-    /// VTKBridge에서 추출한 메쉬 데이터로 USDZ 생성
+    /// Generate USDZ from mesh data extracted by VTKBridge
     static func create(
         vertices: Data, normals: Data, faces: Data,
         color: SIMD3<Float>, roughness: Float,
@@ -66,12 +66,12 @@ enum USDZGenerator {
         material.isDoubleSided = true
         geometry.materials = [material]
 
-        // Scene 구성
+        // Compose scene
         let node = SCNNode(geometry: geometry)
         let scene = SCNScene()
         scene.rootNode.addChildNode(node)
 
-        // USDZ 내보내기
+        // Export USDZ
         print("[USDZ] Writing SCNScene to USDZ ...")
         let delegate: SCNSceneExportDelegate? = nil
         let success = scene.write(to: outputURL, options: nil, delegate: delegate, progressHandler: nil)
@@ -89,7 +89,7 @@ enum USDZGenerator {
         return success
     }
 
-    /// 플랫폼별 색상 생성
+    /// Create platform-specific color
     private static func platformColor(r: Float, g: Float, b: Float) -> Any {
         #if os(iOS)
         return UIColor(red: CGFloat(r), green: CGFloat(g), blue: CGFloat(b), alpha: 1.0)

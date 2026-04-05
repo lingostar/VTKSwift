@@ -1,28 +1,28 @@
 import Foundation
 import Combine
 
-/// iCloud 컨테이너 식별자
+/// iCloud container identifier
 private let iCloudContainerID = "iCloud.codershigh.Chartrix"
 
-/// DICOM 파일을 iCloud Documents(또는 로컬 Documents)에 복사/관리하는 헬퍼
+/// Helper for copying/managing DICOM files in iCloud Documents (or local Documents)
 enum ChartStorage {
 
     // MARK: - iCloud / Local Documents Directory
 
-    /// iCloud Documents 디렉토리 (사용 가능하면), 아니면 로컬 Documents
-    /// - iCloud 가용: `iCloud Drive/Chartrix/Documents/`
-    /// - iCloud 불가: `App Sandbox/Documents/`
-    /// 두 플랫폼(iOS/macOS) 모두 동일한 iCloud 컨테이너를 사용하므로
-    /// 파일이 자동으로 동기화됩니다.
+    /// iCloud Documents directory (if available), otherwise local Documents
+    /// - iCloud available: `iCloud Drive/Chartrix/Documents/`
+    /// - iCloud unavailable: `App Sandbox/Documents/`
+    /// Both platforms (iOS/macOS) use the same iCloud container,
+    /// so files sync automatically.
     static var documentsDirectory: URL {
         if let iCloudURL = iCloudDocumentsURL {
             return iCloudURL
         }
-        // iCloud 불가 시 로컬 Documents 폴더 사용
+        // Fall back to local Documents when iCloud unavailable
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     }
 
-    /// iCloud 컨테이너의 Documents 디렉토리 (nil = iCloud 미설정)
+    /// iCloud container's Documents directory (nil = iCloud not configured)
     static var iCloudDocumentsURL: URL? {
         guard let containerURL = FileManager.default.url(
             forUbiquityContainerIdentifier: iCloudContainerID
@@ -34,7 +34,7 @@ enum ChartStorage {
         return docsURL
     }
 
-    /// iCloud 사용 가능 여부
+    /// Whether iCloud is available
     static var isICloudAvailable: Bool {
         FileManager.default.ubiquityIdentityToken != nil
     }
@@ -43,22 +43,22 @@ enum ChartStorage {
 
     private static let wasUsingICloudKey = "ChartStorage.wasUsingICloud"
 
-    /// 이전에 iCloud를 사용했는지 여부 (UserDefaults 기반)
+    /// Whether iCloud was previously used (UserDefaults-based)
     static var wasUsingICloud: Bool {
         UserDefaults.standard.bool(forKey: wasUsingICloudKey)
     }
 
-    /// 현재 iCloud 사용 상태를 기록
+    /// Record current iCloud usage state
     static func recordICloudUsage() {
         UserDefaults.standard.set(isICloudAvailable, forKey: wasUsingICloudKey)
     }
 
-    /// "이전에 iCloud를 썼는데 지금은 로그아웃된" 상태
+    /// "Previously used iCloud but now signed out" state
     static var needsICloudReSignIn: Bool {
         wasUsingICloud && !isICloudAvailable
     }
 
-    /// Charts 루트 디렉토리
+    /// Charts root directory
     static var chartsDirectory: URL {
         let url = documentsDirectory.appendingPathComponent("Charts", isDirectory: true)
         try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
@@ -67,16 +67,16 @@ enum ChartStorage {
 
     // MARK: - Local → iCloud Migration
 
-    /// 마이그레이션 완료 여부 (UI에서 확인 가능)
+    /// Whether migration is complete (checkable from UI)
     private(set) static var isMigrationComplete = false
 
-    /// 로컬 Documents/Charts 에 기존 데이터가 있으면 iCloud로 마이그레이션 (병합 방식)
+    /// Migrate existing data from local Documents/Charts to iCloud (merge strategy)
     ///
-    /// - iCloud에 Charts 폴더가 없으면: 통째로 이동
-    /// - iCloud에 Charts 폴더가 있으면: 로컬의 각 차트 폴더를 개별 병합
-    /// - 이동 완료된 로컬 폴더는 삭제하여 중복 방지
+    /// - No Charts folder in iCloud: move entirely
+    /// - Charts folder exists in iCloud: merge each local chart folder individually
+    /// - Delete migrated local folders to prevent duplicates
     ///
-    /// 이 메서드는 **동기적**으로 실행됩니다. 호출 후에 파일 접근이 안전합니다.
+    /// This method runs **synchronously**. File access is safe after it returns.
     static func migrateLocalToICloudIfNeeded() {
         defer { isMigrationComplete = true }
 
@@ -88,7 +88,7 @@ enum ChartStorage {
         let fm = FileManager.default
         guard fm.fileExists(atPath: localCharts.path) else { return }
 
-        // 로컬 Charts 내에 실제 콘텐츠가 있는지 확인
+        // Check if local Charts actually has content
         guard let localContents = try? fm.contentsOfDirectory(
             at: localCharts, includingPropertiesForKeys: nil,
             options: [.skipsHiddenFiles]
@@ -96,7 +96,7 @@ enum ChartStorage {
 
         let iCloudCharts = iCloudDocs.appendingPathComponent("Charts", isDirectory: true)
 
-        // Case 1: iCloud에 Charts 폴더가 없으면 → 통째로 이동
+        // Case 1: No Charts folder in iCloud → move entirely
         if !fm.fileExists(atPath: iCloudCharts.path) {
             do {
                 try fm.moveItem(at: localCharts, to: iCloudCharts)
@@ -104,11 +104,11 @@ enum ChartStorage {
                 return
             } catch {
                 print("[ChartStorage] Move failed, falling back to merge: \(error.localizedDescription)")
-                // move 실패 시 아래 merge 로직으로 진행
+                // If move fails, fall through to merge logic below
             }
         }
 
-        // Case 2: iCloud에 이미 Charts 폴더가 있으면 → 차트별 병합
+        // Case 2: Charts folder already exists in iCloud → merge per chart
         try? fm.createDirectory(at: iCloudCharts, withIntermediateDirectories: true)
 
         var migratedCount = 0
@@ -119,22 +119,22 @@ enum ChartStorage {
             let iCloudDest = iCloudCharts.appendingPathComponent(itemName)
 
             if fm.fileExists(atPath: iCloudDest.path) {
-                // iCloud에 같은 이름의 차트 폴더가 이미 있음 → 스킵
+                // Chart folder with same name already exists in iCloud → skip
                 skippedCount += 1
                 print("[ChartStorage] Merge skip (already in iCloud): \(itemName)")
                 continue
             }
 
-            // 로컬 차트 폴더를 iCloud로 이동
+            // Move local chart folder to iCloud
             do {
                 try fm.moveItem(at: localItem, to: iCloudDest)
                 migratedCount += 1
                 print("[ChartStorage] Merged → iCloud: \(itemName)")
             } catch {
-                // 이동 실패 시 복사 시도
+                // If move fails, try copy
                 do {
                     try fm.copyItem(at: localItem, to: iCloudDest)
-                    // 복사 성공 시 로컬 원본 삭제
+                    // Delete local original after successful copy
                     try? fm.removeItem(at: localItem)
                     migratedCount += 1
                     print("[ChartStorage] Copied → iCloud: \(itemName)")
@@ -144,7 +144,7 @@ enum ChartStorage {
             }
         }
 
-        // 로컬 Charts 폴더가 비었으면 삭제
+        // Remove local Charts folder if empty
         if let remaining = try? fm.contentsOfDirectory(
             at: localCharts, includingPropertiesForKeys: nil,
             options: [.skipsHiddenFiles]
@@ -156,25 +156,25 @@ enum ChartStorage {
         print("[ChartStorage] Migration complete: \(migratedCount) migrated, \(skippedCount) skipped")
     }
 
-    // MARK: - iCloud → Local Migration (로그아웃 대응)
+    // MARK: - iCloud → Local Migration (sign-out handling)
 
-    /// iCloud 로그아웃 시: iCloud 컨테이너에 아직 접근 가능하면 로컬로 복사
+    /// On iCloud sign-out: copy to local if iCloud container is still accessible
     ///
-    /// iOS/macOS는 로그아웃 후에도 캐시된 iCloud 파일에 잠시 접근 가능할 수 있습니다.
-    /// 이 함수는 가능한 한 파일을 로컬로 복사하여 데이터 유실을 방지합니다.
+    /// iOS/macOS may still have brief access to cached iCloud files after sign-out.
+    /// This function copies files locally when possible to prevent data loss.
     ///
-    /// 동기적으로 실행됩니다.
+    /// Runs synchronously.
     static func migrateICloudToLocalIfNeeded() {
-        // iCloud 사용 가능하면 역방향 마이그레이션 불필요
+        // No reverse migration needed if iCloud is available
         guard !isICloudAvailable else { return }
-        // 이전에 iCloud를 쓴 적 없으면 할 것 없음
+        // Nothing to do if iCloud was never used
         guard wasUsingICloud else { return }
 
         let fm = FileManager.default
         let localDocs = fm.urls(for: .documentDirectory, in: .userDomainMask).first!
         let localCharts = localDocs.appendingPathComponent("Charts", isDirectory: true)
 
-        // 이미 로컬에 Charts가 있으면 스킵 (이전에 이미 복사됨)
+        // Skip if local Charts already exists (previously copied)
         if let localContents = try? fm.contentsOfDirectory(
             at: localCharts, includingPropertiesForKeys: nil,
             options: [.skipsHiddenFiles]
@@ -183,8 +183,8 @@ enum ChartStorage {
             return
         }
 
-        // iCloud 컨테이너에 접근 시도
-        // 로그아웃 후에도 캐시로 접근 가능할 수 있음
+        // Attempt to access iCloud container
+        // May still be accessible via cache after sign-out
         guard let containerURL = fm.url(forUbiquityContainerIdentifier: iCloudContainerID) else {
             print("[ChartStorage] Cannot access iCloud container after logout")
             return
@@ -199,13 +199,13 @@ enum ChartStorage {
             return
         }
 
-        // iCloud → 로컬 복사
+        // Copy iCloud → local
         do {
             try fm.copyItem(at: iCloudCharts, to: localCharts)
             print("[ChartStorage] Reverse migration: iCloud Charts → local (\(localCharts.path))")
         } catch {
             print("[ChartStorage] Reverse migration failed: \(error.localizedDescription)")
-            // 개별 폴더 복사 시도
+            // Try copying individual folders
             guard let items = try? fm.contentsOfDirectory(
                 at: iCloudCharts, includingPropertiesForKeys: nil,
                 options: [.skipsHiddenFiles]
@@ -229,7 +229,7 @@ enum ChartStorage {
 
     // MARK: - Import DICOM → Study
 
-    /// DICOM 폴더를 앱 내부(iCloud 또는 로컬)로 복사하고, Study의 dicomDirectoryPath를 설정
+    /// Copy DICOM folder into app storage (iCloud or local) and set Study's dicomDirectoryPath
     static func importDICOM(study: Study, chartAlias: String, from sourceURL: URL) {
         // Charts/{alias}/{studyDate}_{modality}/DICOM/
         let studyFolder = "\(study.studyDate)_\(study.modality)".sanitizedFileName
@@ -267,13 +267,13 @@ enum ChartStorage {
         study.imageCount = copiedCount
     }
 
-    /// Study의 DICOM 디렉토리 절대 경로
+    /// Absolute path to Study's DICOM directory
     static func dicomDirectoryURL(for study: Study) -> URL? {
         guard let path = study.dicomDirectoryPath, !path.isEmpty else { return nil }
         return documentsDirectory.appendingPathComponent(path)
     }
 
-    /// Chart 관련 파일 모두 삭제
+    /// Delete all files related to a Chart
     static func deleteFiles(for chart: Chart) {
         let chartDir = chartsDirectory
             .appendingPathComponent(chart.alias.sanitizedFileName, isDirectory: true)
@@ -282,8 +282,8 @@ enum ChartStorage {
 
     // MARK: - Background USDZ Pre-generation
 
-    /// DICOM import 후 백그라운드에서 USDZ를 미리 생성 (Bone 프리셋, ISO 300)
-    /// 메인 스레드에서 호출해야 함 (VTKBridge가 OpenGL 컨텍스트 필요)
+    /// Pre-generate USDZ in background after DICOM import (Bone preset, ISO 300)
+    /// Must be called on main thread (VTKBridge requires OpenGL context)
     static func generateUSDZInBackground(study: Study, chartAlias: String) {
         guard let dirURL = dicomDirectoryURL(for: study) else {
             print("[USDZ-BG] No DICOM directory for study")
@@ -365,19 +365,19 @@ enum ChartStorage {
 
     // MARK: - iCloud Download Support
 
-    /// iCloud 파일/디렉토리의 다운로드 상태
+    /// Download status of iCloud file/directory
     enum DownloadStatus {
-        case local              // 로컬에 이미 있음 (iCloud 아님)
-        case downloaded         // iCloud에서 다운로드 완료
-        case notDownloaded      // iCloud에만 있음 (다운로드 필요)
-        case downloading        // 다운로드 중
+        case local              // Already exists locally (not iCloud)
+        case downloaded         // Downloaded from iCloud
+        case notDownloaded      // Only in iCloud (download needed)
+        case downloading        // Currently downloading
     }
 
-    /// Study의 DICOM 디렉토리 다운로드 상태 확인
+    /// Check download status of Study's DICOM directory
     static func downloadStatus(for study: Study) -> DownloadStatus {
         guard let dirURL = dicomDirectoryURL(for: study) else { return .notDownloaded }
 
-        // iCloud를 사용하지 않으면 로컬 파일
+        // Local file if not using iCloud
         guard isICloudAvailable else {
             return FileManager.default.fileExists(atPath: dirURL.path) ? .local : .notDownloaded
         }
@@ -385,19 +385,32 @@ enum ChartStorage {
         return directoryDownloadStatus(dirURL)
     }
 
-    /// 디렉토리의 iCloud 다운로드 상태 확인
+    /// Check iCloud download status of a directory
     static func directoryDownloadStatus(_ dirURL: URL) -> DownloadStatus {
         let fm = FileManager.default
 
-        // 디렉토리 자체가 없으면
+        // If directory itself doesn't exist
         guard fm.fileExists(atPath: dirURL.path) else { return .notDownloaded }
 
-        // 디렉토리 내 파일들의 상태 확인
-        guard let files = try? fm.contentsOfDirectory(
+        // ⚠️ options: [] — must NOT use .skipsHiddenFiles!
+        // Undownloaded iCloud files exist as hidden ".filename.icloud" placeholders
+        guard let allFiles = try? fm.contentsOfDirectory(
             at: dirURL, includingPropertiesForKeys: [.ubiquitousItemDownloadingStatusKey],
-            options: [.skipsHiddenFiles]
+            options: []
         ) else {
             return .notDownloaded
+        }
+
+        // Include only .icloud placeholders and real files, exclude .DS_Store etc.
+        let files = allFiles.filter { url in
+            let name = url.lastPathComponent
+            if name.hasPrefix(".") && name.hasSuffix(".icloud") {
+                return true   // iCloud placeholder
+            }
+            if name.hasPrefix(".") {
+                return false  // Exclude system files like .DS_Store
+            }
+            return true
         }
 
         if files.isEmpty { return .notDownloaded }
@@ -406,10 +419,17 @@ enum ChartStorage {
         var downloadingCount = 0
 
         for file in files {
+            let name = file.lastPathComponent
+
+            // .icloud placeholder = not downloaded
+            if name.hasPrefix(".") && name.hasSuffix(".icloud") {
+                continue
+            }
+
             guard let values = try? file.resourceValues(
                 forKeys: [.ubiquitousItemDownloadingStatusKey]
             ) else {
-                // resourceValues 실패 = 로컬 파일일 수 있음
+                // resourceValues failed = may be a local file
                 downloadedCount += 1
                 continue
             }
@@ -424,7 +444,7 @@ enum ChartStorage {
                     downloadingCount += 1
                 }
             } else {
-                // status가 nil = 로컬 파일
+                // status is nil = local file
                 downloadedCount += 1
             }
         }
@@ -434,7 +454,7 @@ enum ChartStorage {
         return .notDownloaded
     }
 
-    /// iCloud에서 Study의 DICOM 파일 다운로드 시작
+    /// Start downloading Study's DICOM files from iCloud
     /// - Returns: true if download was triggered, false if already local or failed
     @discardableResult
     static func startDownloading(study: Study) -> Bool {
@@ -442,39 +462,59 @@ enum ChartStorage {
         return startDownloadingDirectory(dirURL)
     }
 
-    /// 디렉토리 내 모든 파일의 iCloud 다운로드를 트리거
+    /// Trigger iCloud download for all files in directory
     @discardableResult
     static func startDownloadingDirectory(_ dirURL: URL) -> Bool {
         let fm = FileManager.default
 
-        // 디렉토리 자체 다운로드 시도
+        // Try downloading the directory itself
         do {
             try fm.startDownloadingUbiquitousItem(at: dirURL)
         } catch {
             print("[ChartStorage] startDownloading directory failed: \(error.localizedDescription)")
         }
 
-        // 디렉토리 내 각 파일도 개별 다운로드 트리거
-        guard let files = try? fm.contentsOfDirectory(
+        // ⚠️ options: [] — must NOT use .skipsHiddenFiles!
+        // Undownloaded iCloud files are hidden ".filename.icloud" placeholders,
+        // so hidden files must be included to trigger downloads
+        guard let allFiles = try? fm.contentsOfDirectory(
             at: dirURL, includingPropertiesForKeys: nil,
-            options: [.skipsHiddenFiles]
+            options: []
         ) else { return false }
 
         var triggered = false
-        for file in files {
+        for file in allFiles {
+            let name = file.lastPathComponent
+
+            // Skip system hidden files like .DS_Store
+            if name.hasPrefix(".") && !name.hasSuffix(".icloud") {
+                continue
+            }
+
+            // .icloud placeholder → convert to original filename URL and trigger download
+            let downloadURL: URL
+            if name.hasPrefix(".") && name.hasSuffix(".icloud") {
+                // ".IMG001.dcm.icloud" → "IMG001.dcm"
+                let originalName = String(name.dropFirst().dropLast(7))
+                downloadURL = dirURL.appendingPathComponent(originalName)
+            } else {
+                downloadURL = file
+            }
+
             do {
-                try fm.startDownloadingUbiquitousItem(at: file)
+                try fm.startDownloadingUbiquitousItem(at: downloadURL)
                 triggered = true
             } catch {
-                // 이미 로컬이거나 에러 — 무시
+                // Already local or error — ignore
             }
         }
 
-        print("[ChartStorage] Triggered download for \(files.count) files in \(dirURL.lastPathComponent)")
+        let fileCount = allFiles.filter { !$0.lastPathComponent.hasPrefix(".") || $0.lastPathComponent.hasSuffix(".icloud") }.count
+        print("[ChartStorage] Triggered download for \(fileCount) files in \(dirURL.lastPathComponent)")
         return triggered
     }
 
-    /// USDZ 파일의 iCloud 다운로드를 트리거
+    /// Trigger iCloud download for USDZ file
     @discardableResult
     static func startDownloadingUSDZ(for study: Study) -> Bool {
         guard let relPath = study.usdzFilePath, !relPath.isEmpty else { return false }
@@ -501,7 +541,7 @@ enum ChartStorage {
 // MARK: - String Sanitization
 
 extension String {
-    /// 파일 이름에 사용할 수 없는 문자를 제거
+    /// Remove characters that are invalid in file names
     var sanitizedFileName: String {
         let illegal = CharacterSet(charactersIn: "/\\:*?\"<>| ")
         let cleaned = components(separatedBy: illegal).joined(separator: "_")

@@ -2,10 +2,10 @@ import SwiftData
 import Foundation
 import SwiftUI
 
-/// 환자 차트 — 한 환자에 여러 Study(CT/MRI 등)를 관리
+/// Patient chart — manages multiple Studies (CT/MRI etc.) per patient
 @Model
 final class Chart {
-    // CloudKit: 모든 속성에 기본값 필수
+    // CloudKit: all attributes must have default values
     var alias: String = ""
     var notes: String = ""
     var createdDate: Date = Date()
@@ -30,19 +30,19 @@ final class Chart {
 
 // MARK: - Study Model
 
-/// 개별 DICOM Study — CT/MRI/US 한 세트
+/// Individual DICOM Study — one CT/MRI/US set
 @Model
 final class Study {
-    // CloudKit: 모든 속성에 기본값 필수
+    // CloudKit: all attributes must have default values
     var modality: String = "CT"
     var imageCount: Int = 0
     var studyDescription: String = ""
     var studyDate: String = ""
 
-    /// DICOM 파일 경로 (Documents 기준 상대 경로)
+    /// DICOM file path (relative to Documents)
     var dicomDirectoryPath: String?
 
-    /// USDZ 파일 경로
+    /// USDZ file path
     var usdzFilePath: String?
 
     var createdDate: Date = Date()
@@ -52,7 +52,7 @@ final class Study {
     @Relationship(deleteRule: .cascade, inverse: \Measurement.study)
     var measurements: [Measurement]?
 
-    /// Note에서 참조하는 inverse (Note.study → Study.notes)
+    /// Inverse reference from Note (Note.study → Study.notes)
     @Relationship(deleteRule: .nullify, inverse: \Note.study)
     var notes: [Note]?
 
@@ -77,17 +77,17 @@ final class Study {
 // MARK: - Chart Helpers
 
 extension Chart {
-    /// 가장 최근 Study
+    /// Most recent Study
     var latestStudy: Study? {
         sortedStudies.first
     }
 
-    /// 날짜순 정렬된 Studies (최신 먼저)
+    /// Studies sorted by date (newest first)
     var sortedStudies: [Study] {
         (studies ?? []).sorted { ($0.studyDate) > ($1.studyDate) }
     }
 
-    /// Study 요약 (예: "CT 2 · MRI 1")
+    /// Study summary (e.g., "CT 2 · MRI 1")
     var studySummary: String {
         let all = studies ?? []
         let grouped = Dictionary(grouping: all) { $0.modality.uppercased() }
@@ -98,7 +98,7 @@ extension Chart {
         return parts.isEmpty ? "No studies" : parts.joined(separator: " · ")
     }
 
-    /// 전체 이미지 수
+    /// Total image count
     var totalImageCount: Int {
         (studies ?? []).reduce(0) { $0 + $1.imageCount }
     }

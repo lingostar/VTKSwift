@@ -8,17 +8,17 @@ struct ChartrixApp: App {
     init() {
         let schema = Schema([Chart.self, Study.self, Measurement.self, Note.self])
 
-        // 1) CloudKit 동기화 시도
+        // 1) Attempt CloudKit sync
         if let container = Self.makeCloudKitContainer(schema: schema) {
             modelContainer = container
             print("[Chartrix] ModelContainer created with CloudKit sync")
         }
-        // 2) CloudKit 실패 시 로컬 전용으로 폴백
+        // 2) Fall back to local-only if CloudKit fails
         else if let container = Self.makeLocalContainer(schema: schema) {
             modelContainer = container
             print("[Chartrix] ModelContainer created (local only, CloudKit unavailable)")
         }
-        // 3) 기존 DB 충돌 시: 기존 store 삭제 후 CloudKit으로 재생성
+        // 3) On DB conflict: delete existing store and recreate with CloudKit
         else {
             Self.deleteExistingStore()
             do {

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 차트 목록의 한 행 — 썸네일 + 환자 이름 + Study 목록
+/// Single row in chart list — thumbnail + patient name + Study list
 struct ChartRowView: View {
     let chart: Chart
 
@@ -9,18 +9,18 @@ struct ChartRowView: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            // 썸네일 (최신 Study의 중간 슬라이스)
+            // Thumbnail (middle slice of latest Study)
             thumbnail
                 .frame(width: 72, height: 72)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
-            // 정보
+            // Info
             VStack(alignment: .leading, spacing: 6) {
                 Text(chart.alias)
                     .font(.headline)
                     .lineLimit(1)
 
-                // Study 목록
+                // Study list
                 if (chart.studies ?? []).isEmpty {
                     Text("No studies")
                         .font(.caption)
@@ -53,7 +53,7 @@ struct ChartRowView: View {
 
     private func studyRow(_ study: Study) -> some View {
         HStack(spacing: 6) {
-            // iCloud 다운로드 상태 아이콘
+            // iCloud download status icon
             let status = ChartStorage.downloadStatus(for: study)
             if status == .notDownloaded {
                 Image(systemName: "icloud.and.arrow.down")
@@ -95,7 +95,7 @@ struct ChartRowView: View {
                     .resizable()
                     .scaledToFill()
 
-                // iCloud 배지 오버레이
+                // iCloud badge overlay
                 if hasCloudOnlyStudies {
                     Image(systemName: "icloud.and.arrow.down")
                         .font(.caption2)
@@ -107,7 +107,7 @@ struct ChartRowView: View {
                 }
             }
         } else if hasCloudOnlyStudies {
-            // 썸네일 로드 불가 + iCloud 미다운로드
+            // Thumbnail not loadable + iCloud not downloaded
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(Color.gray.opacity(0.12))
@@ -133,7 +133,7 @@ struct ChartRowView: View {
         }
     }
 
-    /// Study 중 하나라도 iCloud에서 다운로드되지 않은 것이 있는지
+    /// Whether any Study has not been downloaded from iCloud
     private var hasCloudOnlyStudies: Bool {
         guard ChartStorage.isICloudAvailable else { return false }
         return (chart.studies ?? []).contains { study in
@@ -146,11 +146,11 @@ struct ChartRowView: View {
         guard let study = chart.latestStudy,
               let dirURL = ChartStorage.dicomDirectoryURL(for: study) else { return }
 
-        // iCloud 파일이 아직 없으면 다운로드 트리거
+        // Trigger download if iCloud files not yet available
         let status = ChartStorage.directoryDownloadStatus(dirURL)
         if status == .notDownloaded || status == .downloading {
             ChartStorage.startDownloadingDirectory(dirURL)
-            return // 다운로드 완료 후 다시 로드되도록
+            return // Will reload after download completes
         }
 
         DispatchQueue.global(qos: .utility).async {

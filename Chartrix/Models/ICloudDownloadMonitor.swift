@@ -1,8 +1,8 @@
 import Foundation
 import Combine
 
-/// iCloud 파일 다운로드 진행 상태를 모니터링하는 ObservableObject
-/// NSMetadataQuery를 사용하여 iCloud 다운로드 진행률을 추적합니다.
+/// ObservableObject that monitors iCloud file download progress
+/// Tracks iCloud download progress using NSMetadataQuery.
 @MainActor
 final class ICloudDownloadMonitor: ObservableObject {
     enum State: Equatable {
@@ -20,12 +20,30 @@ final class ICloudDownloadMonitor: ObservableObject {
     private var totalFileCount: Int = 0
     private var pollTimer: Timer?
 
-    /// DICOM 디렉토리의 다운로드를 시작하고 모니터링
+    /// Number of consecutive polls where the directory was not found
+    private var directoryMissingCount: Int = 0
+
+    /// Maximum polls with missing directory before reporting failure (1 poll/sec)
+    private let maxDirectoryMissingPolls: Int = 15
+
+    /// Start monitoring and downloading a DICOM directory
     func startMonitoring(directoryURL: URL) {
         self.directoryURL = directoryURL
+        self.directoryMissingCount = 0
         state = .checking
 
-        // 먼저 현재 상태 체크
+        let fm = FileManager.default
+
+        // Early detection: iCloud Documents not accessible + directory doesn't exist locally
+        // This happens when CloudKit metadata synced but iCloud Drive is unavailable
+        // (e.g., simulator, iCloud Drive disabled, or iCloud not signed in)
+        if !fm.fileExists(atPath: directoryURL.path) && !ChartStorage.isICloudAvailable {
+            state = .failed("iCloud Drive is not available.\nSign in to iCloud and enable iCloud Drive to download DICOM files.")
+            print("[iCloud] Download failed: iCloud Documents not accessible, directory does not exist locally")
+            return
+        }
+
+        // Check current status
         let status = ChartStorage.directoryDownloadStatus(directoryURL)
 
         switch status {
@@ -33,14 +51,14 @@ final class ICloudDownloadMonitor: ObservableObject {
             state = .completed
             return
         case .downloading, .notDownloaded:
-            // 다운로드 트리거
+            // Trigger download
             ChartStorage.startDownloadingDirectory(directoryURL)
             state = .downloading(progress: 0, downloadedFiles: 0, totalFiles: 0)
             startPolling()
         }
     }
 
-    /// Study 기반으로 다운로드 시작
+    /// Start download based on Study
     func startMonitoring(study: Study) {
         guard let dirURL = ChartStorage.dicomDirectoryURL(for: study) else {
             state = .failed("DICOM directory not found")
@@ -56,7 +74,7 @@ final class ICloudDownloadMonitor: ObservableObject {
     }
 
     nonisolated func cleanup() {
-        // Timer와 query는 MainActor에서 정리해야 함
+        // Timer and query must be cleaned up on MainActor
         Task { @MainActor [weak self] in
             self?.pollTimer?.invalidate()
             self?.pollTimer = nil
@@ -65,7 +83,7 @@ final class ICloudDownloadMonitor: ObservableObject {
         }
     }
 
-    // MARK: - Polling (간단하고 안정적인 방식)
+    // MARK: - Polling (simple and reliable approach)
 
     private func startPolling() {
         pollTimer?.invalidate()
@@ -81,27 +99,70 @@ final class ICloudDownloadMonitor: ObservableObject {
 
         let fm = FileManager.default
 
-        guard let files = try? fm.contentsOfDirectory(
+        // Check if directory exists at all
+        guard fm.fileExists(atPath: dirURL.path) else {
+            directoryMissingCount += 1
+            print("[iCloud] Directory not found (attempt \(directoryMissingCount)/\(maxDirectoryMissingPolls)): \(dirURL.lastPathComponent)")
+
+            if directoryMissingCount >= maxDirectoryMissingPolls {
+                // Directory never appeared — iCloud Documents likely not accessible
+                pollTimer?.invalidate()
+                pollTimer = nil
+
+                if !ChartStorage.isICloudAvailable {
+                    state = .failed("iCloud Drive is not available.\nSign in to iCloud and enable iCloud Drive to download DICOM files.")
+                } else {
+                    state = .failed("Unable to download files from iCloud.\nPlease check your network connection and try again.")
+                }
+            }
+            return
+        }
+
+        // Reset missing counter once directory appears
+        directoryMissingCount = 0
+
+        // ⚠️ options: [] — must NOT use .skipsHiddenFiles!
+        // Undownloaded iCloud files exist as hidden ".filename.icloud"
+        // placeholders, so hidden files must be included to count files correctly
+        guard let allFiles = try? fm.contentsOfDirectory(
             at: dirURL,
             includingPropertiesForKeys: [
                 .ubiquitousItemDownloadingStatusKey,
                 .fileSizeKey
             ],
-            options: [.skipsHiddenFiles]
+            options: []
         ) else {
-            // 디렉토리 아직 안 보임 — 계속 대기
+            // Directory exists but can't read contents — keep waiting
             return
+        }
+
+        // Include only .icloud placeholders and real files, exclude .DS_Store etc.
+        let files = allFiles.filter { url in
+            let name = url.lastPathComponent
+            if name.hasPrefix(".") && name.hasSuffix(".icloud") {
+                return true   // iCloud placeholder (undownloaded file)
+            }
+            if name.hasPrefix(".") {
+                return false  // Exclude system hidden files like .DS_Store
+            }
+            return true       // Regular file (downloaded or local)
         }
 
         let total = files.count
         if total == 0 {
-            // 아직 placeholder만 있거나 비어있음
             return
         }
 
         var downloadedCount = 0
 
         for file in files {
+            let name = file.lastPathComponent
+
+            // .icloud placeholder = not yet downloaded
+            if name.hasPrefix(".") && name.hasSuffix(".icloud") {
+                continue
+            }
+
             let values = try? file.resourceValues(
                 forKeys: [.ubiquitousItemDownloadingStatusKey]
             )
@@ -114,7 +175,7 @@ final class ICloudDownloadMonitor: ObservableObject {
                     break
                 }
             } else {
-                // status nil = 로컬 파일
+                // status nil = local file
                 downloadedCount += 1
             }
         }

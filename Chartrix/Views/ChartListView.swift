@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// 차트 목록 — Chartrix 시작 화면 (iPhone NavigationStack용)
+/// Chart list — Chartrix home screen (for iPhone NavigationStack)
 struct ChartListView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var syncMonitor: CloudSyncMonitor
@@ -30,7 +30,7 @@ struct ChartListView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 12) {
-                    // iCloud 상태 표시
+                    // iCloud status indicator
                     if syncMonitor.isSignedOutFromICloud {
                         Image(systemName: "icloud.slash")
                             .font(.caption)
@@ -74,11 +74,11 @@ struct ChartListView: View {
 
     private var chartList: some View {
         List {
-            // iCloud 로그아웃 경고 배너
+            // iCloud signed-out warning banner
             if syncMonitor.isSignedOutFromICloud {
                 iCloudSignedOutBanner
             }
-            // 동기화 배너 (동기화 진행 중일 때)
+            // Sync banner (shown while syncing)
             else if syncMonitor.isSyncing {
                 iCloudSyncBanner
             }
@@ -108,11 +108,11 @@ struct ChartListView: View {
                         .foregroundColor(.accentColor)
                         .symbolEffect(.pulse)
 
-                    Text("iCloud 동기화 중...")
+                    Text("Syncing with iCloud...")
                         .font(.title3)
                         .fontWeight(.medium)
 
-                    Text("다른 기기의 차트 데이터를 가져오고 있습니다.\n잠시만 기다려 주세요.")
+                    Text("Fetching chart data from your other devices.\nPlease wait a moment.")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -147,7 +147,7 @@ struct ChartListView: View {
 
     // MARK: - iCloud Signed Out UI
 
-    /// 전체 화면 — 차트가 없고 iCloud 로그아웃 상태
+    /// Full screen — no charts and iCloud signed out
     private var iCloudSignedOutFullScreen: some View {
         VStack(spacing: 24) {
             Spacer()
@@ -191,7 +191,7 @@ struct ChartListView: View {
         .padding()
     }
 
-    /// 리스트 배너 — 차트는 보이지만 iCloud 로그아웃 상태
+    /// List banner — charts visible but iCloud signed out
     private var iCloudSignedOutBanner: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
@@ -215,7 +215,7 @@ struct ChartListView: View {
         .listRowBackground(Color.orange.opacity(0.08))
     }
 
-    /// 설정 열기 버튼
+    /// Open Settings button
     private var openSettingsButton: some View {
         #if os(iOS)
         Button {
@@ -246,10 +246,10 @@ struct ChartListView: View {
                 .foregroundColor(.accentColor)
                 .symbolEffect(.pulse)
             VStack(alignment: .leading, spacing: 2) {
-                Text("iCloud 동기화 중")
+                Text("Syncing with iCloud")
                     .font(.caption)
                     .fontWeight(.medium)
-                Text("새로운 데이터가 도착할 수 있습니다")
+                Text("New data may be arriving")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
@@ -266,16 +266,16 @@ struct ChartListView: View {
         if chart.modelContext == nil {
             modelContext.insert(chart)
         }
-        // 2) Study 명시적 insert + 관계 설정
+        // 2) Explicitly insert Study + set up relationship
         modelContext.insert(study)
         if chart.studies == nil { chart.studies = [] }
         chart.studies?.append(study)
-        // 3) DICOM 파일 복사
+        // 3) Copy DICOM files
         ChartStorage.importDICOM(study: study, chartAlias: chart.alias, from: folderURL)
         chart.updatedDate = Date()
-        // 4) 명시적 저장
+        // 4) Explicit save
         try? modelContext.save()
-        // 백그라운드에서 USDZ 미리 생성
+        // Pre-generate USDZ in background
         ChartStorage.generateUSDZInBackground(study: study, chartAlias: chart.alias)
     }
 

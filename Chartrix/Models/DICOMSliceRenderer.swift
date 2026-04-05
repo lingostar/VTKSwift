@@ -6,10 +6,10 @@ import AppKit
 import UIKit
 #endif
 
-/// 순수 Swift DICOM 픽셀 렌더러 — VTK 없이 DICOM 파일에서 CGImage를 생성
+/// Pure Swift DICOM pixel renderer — generates CGImage from DICOM files without VTK
 enum DICOMSliceRenderer {
 
-    /// DICOM 디렉토리에서 특정 슬라이스의 CGImage를 반환
+    /// Returns CGImage for a specific slice from DICOM directory
     static func renderSlice(
         directoryURL: URL,
         sliceIndex: Int,
@@ -21,7 +21,7 @@ enum DICOMSliceRenderer {
         return renderFile(files[sliceIndex], windowCenter: windowCenter, windowWidth: windowWidth)
     }
 
-    /// DICOM 디렉토리의 중간 슬라이스 CGImage 반환 (썸네일용)
+    /// Returns middle slice CGImage from DICOM directory (for thumbnails)
     static func renderMiddleSlice(directoryURL: URL) -> CGImage? {
         let files = sortedDICOMFiles(in: directoryURL)
         guard !files.isEmpty else { return nil }
@@ -29,7 +29,7 @@ enum DICOMSliceRenderer {
         return renderFile(files[mid])
     }
 
-    /// DICOM 디렉토리의 정렬된 파일 목록
+    /// Sorted file list from DICOM directory
     static func sortedDICOMFiles(in directoryURL: URL) -> [URL] {
         let fm = FileManager.default
         guard let enumerator = fm.enumerator(at: directoryURL, includingPropertiesForKeys: nil,
@@ -46,7 +46,7 @@ enum DICOMSliceRenderer {
         return files.sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
-    /// 단일 DICOM 파일에서 CGImage 생성
+    /// Generate CGImage from a single DICOM file
     static func renderFile(
         _ url: URL,
         windowCenter: Double? = nil,

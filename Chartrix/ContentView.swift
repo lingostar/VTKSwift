@@ -31,7 +31,7 @@ struct ContentView: View {
         .environmentObject(syncMonitor)
     }
 
-    /// 마이그레이션 진행 중 화면
+    /// Migration in-progress screen
     private var migrationView: some View {
         VStack(spacing: 20) {
             Spacer()
@@ -41,11 +41,11 @@ struct ContentView: View {
                 .foregroundColor(.accentColor)
                 .symbolEffect(.pulse)
 
-            Text("iCloud로 데이터 이동 중...")
+            Text("Moving data to iCloud...")
                 .font(.title3)
                 .fontWeight(.medium)
 
-            Text("로컬 데이터를 iCloud에 업로드하고 있습니다.\n잠시만 기다려 주세요.")
+            Text("Uploading local data to iCloud.\nPlease wait a moment.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -89,17 +89,17 @@ struct ContentView: View {
         }
     }
 
-    /// 앱 첫 실행 시 마이그레이션 처리
+    /// Handle migration on first app launch
     ///
-    /// - iCloud 사용 가능: 로컬 → iCloud 마이그레이션
-    /// - iCloud 로그아웃: iCloud → 로컬 역방향 마이그레이션 시도
-    /// - 마이그레이션 완료 후에 UI가 파일에 접근합니다.
+    /// - iCloud available: Local → iCloud migration
+    /// - iCloud signed out: Attempt reverse iCloud → Local migration
+    /// - UI accesses files only after migration completes.
     private func migrateToICloudOnce() async {
         guard !didMigrate else { return }
         didMigrate = true
 
         if ChartStorage.isICloudAvailable {
-            // iCloud 사용 가능 — 정방향 마이그레이션
+            // iCloud available — forward migration
             let needsMigration = hasLocalCharts()
 
             if needsMigration {
@@ -119,7 +119,7 @@ struct ContentView: View {
                 isMigrating = false
             }
         } else if ChartStorage.needsICloudReSignIn {
-            // iCloud 로그아웃됨 — 역방향 마이그레이션 시도
+            // iCloud signed out — attempt reverse migration
             await withCheckedContinuation { continuation in
                 DispatchQueue.global(qos: .userInitiated).async {
                     ChartStorage.migrateICloudToLocalIfNeeded()
@@ -129,7 +129,7 @@ struct ContentView: View {
         }
     }
 
-    /// 로컬 Documents/Charts 에 데이터가 있는지 빠르게 확인
+    /// Quick check whether local Documents/Charts contains data
     private func hasLocalCharts() -> Bool {
         let localDocs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let localCharts = localDocs.appendingPathComponent("Charts", isDirectory: true)
@@ -141,7 +141,7 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Split List (selection binding 용)
+// MARK: - Split List (for selection binding)
 
 private struct ChartSplitListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -162,7 +162,7 @@ private struct ChartSplitListView: View {
 
     var body: some View {
         List(selection: $selectedChart) {
-            // iCloud 로그아웃 경고
+            // iCloud signed-out warning
             if syncMonitor.isSignedOutFromICloud {
                 HStack(spacing: 10) {
                     Image(systemName: "icloud.slash")
@@ -180,17 +180,17 @@ private struct ChartSplitListView: View {
                 .padding(.vertical, 4)
                 .listRowBackground(Color.orange.opacity(0.08))
             }
-            // 동기화 배너
+            // Sync banner
             else if syncMonitor.isSyncing {
                 HStack(spacing: 10) {
                     Image(systemName: "icloud.and.arrow.down")
                         .foregroundColor(.accentColor)
                         .symbolEffect(.pulse)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("iCloud 동기화 중")
+                        Text("Syncing with iCloud")
                             .font(.caption)
                             .fontWeight(.medium)
-                        Text("새로운 데이터가 도착할 수 있습니다")
+                        Text("New data may be arriving")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -242,14 +242,14 @@ private struct ChartSplitListView: View {
                 if chart.modelContext == nil {
                     modelContext.insert(chart)
                 }
-                // 2) Study를 명시적으로 insert 후 관계 설정
+                // 2) Explicitly insert Study and set up relationship
                 modelContext.insert(study)
                 if chart.studies == nil { chart.studies = [] }
                 chart.studies?.append(study)
-                // 3) DICOM 파일 복사
+                // 3) Copy DICOM files
                 ChartStorage.importDICOM(study: study, chartAlias: chart.alias, from: folderURL)
                 chart.updatedDate = Date()
-                // 4) 명시적 저장
+                // 4) Explicit save
                 try? modelContext.save()
                 selectedChart = chart
                 ChartStorage.generateUSDZInBackground(study: study, chartAlias: chart.alias)

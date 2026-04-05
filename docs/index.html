@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chartrix — 의료영상 3D 뷰어</title>
+    <title>Chartrix — Medical Imaging 3D Viewer</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -23,7 +23,19 @@
             margin-bottom: 1.5rem;
         }
         .hero h1 { font-size: 2.5rem; color: #7fe0c0; margin-bottom: 0.3rem; }
-        .hero p { font-size: 1.15rem; color: #90b0b8; margin-bottom: 2rem; }
+        .hero p.tagline { font-size: 1.15rem; color: #90b0b8; margin-bottom: 1.2rem; }
+        .lang-toggle {
+            display: inline-block;
+            background: #1a3040;
+            border: 1px solid #2a4a5a;
+            border-radius: 8px;
+            padding: 0.3rem 0.8rem;
+            color: #7fe0c0;
+            text-decoration: none;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+        }
         .badge {
             display: inline-block;
             height: 50px;
@@ -55,20 +67,63 @@
             border-top: 1px solid #1e3040;
             font-size: 0.85rem; color: #506068;
         }
+        .section-ko { display: none; }
     </style>
 </head>
 <body>
     <div class="hero">
         <img src="icon-256.png" alt="Chartrix Icon">
         <h1>Chartrix</h1>
-        <p>CT/MRI 의료 영상을 3D로, 당신의 손 안에</p>
-        <!-- App Store 배지: 출시 후 아래 주석 해제 -->
+        <div id="tagline-en">
+            <p class="tagline">CT/MRI medical imaging in 3D, right in your hands</p>
+        </div>
+        <div id="tagline-ko" style="display:none;">
+            <p class="tagline">CT/MRI 의료 영상을 3D로, 당신의 손 안에</p>
+        </div>
+        <a class="lang-toggle" onclick="toggleLang()">한국어 / English</a>
+        <br><br>
+        <!-- App Store badge: uncomment after launch -->
         <!-- <a href="https://apps.apple.com/app/chartrix/idXXXXXXXXXX">
             <img class="badge" src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store">
         </a> -->
     </div>
 
-    <div class="features">
+    <!-- English -->
+    <div id="features-en" class="features section-en">
+        <div class="card">
+            <div class="icon">🔬</div>
+            <h3>DICOM 2D Slices</h3>
+            <p>Browse all slices of CT/MRI images with a slider. Built-in distance and angle measurement tools.</p>
+        </div>
+        <div class="card">
+            <div class="icon">🧊</div>
+            <h3>3D Volume Rendering</h3>
+            <p>Real-time 3D rendering powered by VTK. Rotate, zoom, and pan with touch. 5 CT presets included.</p>
+        </div>
+        <div class="card">
+            <div class="icon">📱</div>
+            <h3>USDZ AR Export</h3>
+            <p>Auto-generate 3D models from CT data. View them in real-world space with AR Quick Look.</p>
+        </div>
+        <div class="card">
+            <div class="icon">📋</div>
+            <h3>Patient Chart Management</h3>
+            <p>Manage multiple studies by date. Alias-based registration for privacy. Save notes and measurements.</p>
+        </div>
+        <div class="card">
+            <div class="icon">☁️</div>
+            <h3>iCloud Sync</h3>
+            <p>Seamless sync across iPhone, iPad, and Mac via iCloud. Your charts and DICOM files are always up to date.</p>
+        </div>
+        <div class="card">
+            <div class="icon">🔒</div>
+            <h3>Privacy First</h3>
+            <p>No accounts, no tracking, no third-party servers. All data stays on your device and your private iCloud.</p>
+        </div>
+    </div>
+
+    <!-- 한국어 -->
+    <div id="features-ko" class="features section-ko">
         <div class="card">
             <div class="icon">🔬</div>
             <h3>DICOM 2D 슬라이스</h3>
@@ -89,9 +144,25 @@
             <h3>환자 차트 관리</h3>
             <p>다중 Study를 날짜별 관리. 별칭 기반 등록으로 개인정보 보호. 메모 및 측정 기록 저장.</p>
         </div>
+        <div class="card">
+            <div class="icon">☁️</div>
+            <h3>iCloud 동기화</h3>
+            <p>iCloud를 통해 iPhone, iPad, Mac 간 원활한 동기화. 차트와 DICOM 파일이 항상 최신 상태.</p>
+        </div>
+        <div class="card">
+            <div class="icon">🔒</div>
+            <h3>프라이버시 우선</h3>
+            <p>계정 없음, 추적 없음, 제3자 서버 없음. 모든 데이터는 기기와 개인 iCloud에만 저장됩니다.</p>
+        </div>
     </div>
 
-    <div class="links">
+    <div id="links-en" class="links section-en">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="support.html">Support / FAQ</a>
+        <a href="https://github.com/lingostar/Chartrix">GitHub</a>
+    </div>
+
+    <div id="links-ko" class="links section-ko">
         <a href="privacy.html">개인정보 처리방침</a>
         <a href="support.html">지원 / FAQ</a>
         <a href="https://github.com/lingostar/Chartrix">GitHub</a>
@@ -100,5 +171,27 @@
     <footer>
         <p>Chartrix by AcademyLingo &middot; Reference Only &middot; Not for clinical diagnosis</p>
     </footer>
+
+    <script>
+        function toggleLang() {
+            const enSections = document.querySelectorAll('.section-en');
+            const koSections = document.querySelectorAll('.section-ko');
+            const taglineEn = document.getElementById('tagline-en');
+            const taglineKo = document.getElementById('tagline-ko');
+
+            const isEnVisible = enSections[0].style.display !== 'none';
+
+            enSections.forEach(el => el.style.display = isEnVisible ? 'none' : '');
+            koSections.forEach(el => el.style.display = isEnVisible ? '' : 'none');
+            taglineEn.style.display = isEnVisible ? 'none' : '';
+            taglineKo.style.display = isEnVisible ? '' : 'none';
+        }
+
+        // Ensure correct initial state
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.section-en').forEach(el => el.style.display = '');
+            document.querySelectorAll('.section-ko').forEach(el => el.style.display = 'none');
+        });
+    </script>
 </body>
 </html>

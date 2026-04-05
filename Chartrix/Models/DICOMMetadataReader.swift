@@ -1,10 +1,10 @@
 import Foundation
 
-/// DICOM 파일에서 메타데이터(Modality, Study Description 등)를 읽는 경량 파서
-/// 픽셀 데이터는 건너뛰고 헤더 태그만 읽는다.
+/// Lightweight parser that reads metadata (Modality, Study Description, etc.) from DICOM files
+/// Skips pixel data and reads only header tags.
 enum DICOMMetadataReader {
 
-    /// DICOM 폴더에서 첫 번째 파일의 메타데이터 + 파일 수를 반환
+    /// Returns metadata from first file + file count in DICOM folder
     static func readFolder(at url: URL) -> DICOMFolderInfo? {
         let fm = FileManager.default
         guard let enumerator = fm.enumerator(at: url, includingPropertiesForKeys: [.isRegularFileKey]) else {
@@ -19,9 +19,9 @@ enum DICOMMetadataReader {
             let ext = fileURL.pathExtension.lowercased()
             let name = fileURL.lastPathComponent
 
-            // DICOM 파일: .dcm 확장자이거나, 확장자 없는 파일
+            // DICOM file: .dcm extension or no extension
             if ext == "dcm" || ext == "dicom" || ext.isEmpty || name == "DICOMDIR" {
-                // 매직 넘버 확인 (128 preamble + "DICM")
+                // Check magic number (128 preamble + "DICM")
                 if isDICOMFile(fileURL) {
                     dicomFiles.append(fileURL)
                 }
@@ -46,7 +46,7 @@ enum DICOMMetadataReader {
         )
     }
 
-    /// 단일 파일이 DICOM인지 확인
+    /// Check if a single file is DICOM
     private static func isDICOMFile(_ url: URL) -> Bool {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
         defer { handle.closeFile() }
@@ -71,7 +71,7 @@ enum DICOMMetadataReader {
 
     // MARK: - Lightweight Parser
 
-    /// 필요한 태그만 빠르게 읽는다. Pixel Data(7FE0,0010) 도달 시 중단.
+    /// Reads only required tags quickly. Stops at Pixel Data (7FE0,0010).
     private static func parseTags(from data: Data) -> [TagKey: String] {
         var result: [TagKey: String] = [:]
         var offset = 0
@@ -174,7 +174,7 @@ enum DICOMMetadataReader {
     }
 }
 
-/// DICOM 폴더의 메타데이터 요약
+/// DICOM folder metadata summary
 struct DICOMFolderInfo {
     let modality: String
     let studyDescription: String

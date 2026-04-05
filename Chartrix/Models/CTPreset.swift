@@ -1,6 +1,6 @@
 import Foundation
 
-/// CT 볼륨 렌더링 프리셋
+/// CT volume rendering preset
 enum CTPreset: Int, CaseIterable, Identifiable {
     case softTissue = 0
     case bone = 1

@@ -1,14 +1,14 @@
 import SwiftUI
 import SwiftData
 
-/// 노트 편집 시트 — 새 노트 작성 또는 기존 노트 수정
+/// Note editor sheet — create new note or edit existing note
 struct NoteEditorView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     let chart: Chart
-    let note: Note?          // nil이면 새 노트 생성
-    let studies: [Study]     // Study 참조 선택용
+    let note: Note?          // nil = create new note
+    let studies: [Study]     // For selecting Study reference
 
     @State private var title: String = ""
     @State private var content: String = ""
@@ -72,13 +72,13 @@ struct NoteEditorView: View {
 
     private func saveNote() {
         if let note {
-            // 기존 노트 수정
+            // Edit existing note
             note.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
             note.content = content.trimmingCharacters(in: .whitespacesAndNewlines)
             note.study = selectedStudy
             note.updatedDate = Date()
         } else {
-            // 새 노트 생성
+            // Create new note
             let newNote = Note(
                 title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                 content: content.trimmingCharacters(in: .whitespacesAndNewlines),
