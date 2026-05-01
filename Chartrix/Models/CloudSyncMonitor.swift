@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import CloudKit
+import CoreData
 
 /// Monitors CloudKit + iCloud Documents sync status
 /// Notifies UI that sync is in progress on first app launch.
@@ -17,15 +18,70 @@ final class CloudSyncMonitor: ObservableObject {
     /// iCloud account status
     @Published var accountStatus: CKAccountStatus = .couldNotDetermine
 
+    /// Last sync event description (for diagnostics)
+    @Published var lastSyncEvent: String = ""
+
+    /// Whether a sync error has occurred
+    @Published var hasSyncError: Bool = false
+
     private var syncTimer: Timer?
     private var startTime: Date?
-    private var initialChartCount: Int = 0
+    private var eventObservers: [Any] = []
 
     /// Maximum sync wait time (seconds) — auto-completes after this
     private let maxSyncDuration: TimeInterval = 15
 
     init() {
+        setupPersistentStoreEventObserver()
         checkInitialState()
+    }
+
+    deinit {
+        for observer in eventObservers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+
+    // MARK: - Core Data / CloudKit Event Monitoring
+
+    /// Observe NSPersistentCloudKitContainer sync events for diagnostics
+    private func setupPersistentStoreEventObserver() {
+        // Monitor remote change notifications (CloudKit data arrived)
+        let remoteChange = NotificationCenter.default.addObserver(
+            forName: NSNotification.Name.NSPersistentStoreRemoteChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.lastSyncEvent = "Remote change received"
+                self.hasSyncError = false
+                print("[CloudSync] Remote change notification received")
+
+                // If we're still in sync-wait, finish early
+                if self.isSyncing {
+                    self.finishSync()
+                }
+            }
+        }
+        eventObservers.append(remoteChange)
+
+        // Monitor Core Data import events
+        let importNotification = NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("NSPersistentCloudKitContainer.eventChanged"),
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if let event = notification.userInfo?["event"] as? NSObject {
+                    let desc = String(describing: event)
+                    print("[CloudSync] CK event: \(desc)")
+                    self.lastSyncEvent = desc
+                }
+            }
+        }
+        eventObservers.append(importNotification)
     }
 
     // MARK: - Initial State Detection
@@ -53,17 +109,25 @@ final class CloudSyncMonitor: ObservableObject {
                 guard let self else { return }
                 self.accountStatus = status
 
+                if let error {
+                    print("[CloudSync] Account status error: \(error)")
+                    self.lastSyncEvent = "Account error: \(error.localizedDescription)"
+                    self.hasSyncError = true
+                }
+
                 if status == .available {
-                    // iCloud signed in → show sync indicator
+                    print("[CloudSync] iCloud account available — starting sync watch")
                     self.beginSyncWatch()
                 } else {
+                    print("[CloudSync] iCloud account status: \(status.rawValue)")
+                    self.lastSyncEvent = "iCloud account not available (status: \(status.rawValue))"
                     self.isSyncing = false
                 }
             }
         }
 
         // 5) Subscribe to iCloud account change notifications
-        NotificationCenter.default.addObserver(
+        let accountChange = NotificationCenter.default.addObserver(
             forName: .NSUbiquityIdentityDidChange,
             object: nil,
             queue: .main
@@ -72,6 +136,7 @@ final class CloudSyncMonitor: ObservableObject {
                 self?.handleAccountChange()
             }
         }
+        eventObservers.append(accountChange)
     }
 
     /// Handle iCloud account change (sign-in/sign-out)
@@ -81,9 +146,11 @@ final class CloudSyncMonitor: ObservableObject {
         if ChartStorage.isICloudAvailable {
             // Signed back in
             isSignedOutFromICloud = false
+            lastSyncEvent = "iCloud account restored"
         } else if ChartStorage.wasUsingICloud {
             // Signed out
             isSignedOutFromICloud = true
+            lastSyncEvent = "iCloud sign-out detected"
             finishSync()
         }
     }
@@ -111,6 +178,7 @@ final class CloudSyncMonitor: ObservableObject {
 
         // Timeout: end sync wait
         if elapsed >= maxSyncDuration {
+            print("[CloudSync] Sync watch timeout (\(maxSyncDuration)s)")
             finishSync()
             return
         }
@@ -129,6 +197,33 @@ final class CloudSyncMonitor: ObservableObject {
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(3))
             finishSync()
+        }
+    }
+
+    // MARK: - Diagnostics
+
+    /// Summary string for debugging sync state
+    var diagnosticSummary: String {
+        var lines: [String] = []
+        lines.append("CloudKit enabled: \(ChartrixApp.isCloudKitEnabled)")
+        lines.append("iCloud available: \(ChartStorage.isICloudAvailable)")
+        lines.append("Account status: \(accountStatusName)")
+        lines.append("Signed out: \(isSignedOutFromICloud)")
+        lines.append("Syncing: \(isSyncing)")
+        if !lastSyncEvent.isEmpty {
+            lines.append("Last event: \(lastSyncEvent)")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private var accountStatusName: String {
+        switch accountStatus {
+        case .available: return "available"
+        case .noAccount: return "noAccount"
+        case .restricted: return "restricted"
+        case .couldNotDetermine: return "couldNotDetermine"
+        case .temporarilyUnavailable: return "temporarilyUnavailable"
+        @unknown default: return "unknown(\(accountStatus.rawValue))"
         }
     }
 }

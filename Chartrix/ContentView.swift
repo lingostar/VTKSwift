@@ -6,6 +6,11 @@ struct ContentView: View {
     @State private var didMigrate = false
     @State private var isMigrating = false
     @StateObject private var syncMonitor = CloudSyncMonitor()
+    @StateObject private var fullScreen = FullScreenState()
+
+    /// NavigationSplitView column visibility. Driven by `fullScreen.isFullScreen`
+    /// so the sidebar is hidden in fullscreen for an immersive viewer.
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -29,6 +34,12 @@ struct ContentView: View {
         }
         .task { await migrateToICloudOnce() }
         .environmentObject(syncMonitor)
+        .environmentObject(fullScreen)
+        .onChange(of: fullScreen.isFullScreen) { _, value in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                columnVisibility = value ? .detailOnly : .all
+            }
+        }
     }
 
     /// Migration in-progress screen
@@ -62,11 +73,12 @@ struct ContentView: View {
     // MARK: - iPad / Mac: NavigationSplitView
 
     private var splitView: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             ChartSplitListView(selectedChart: $selectedChart)
         } detail: {
             if let chart = selectedChart {
                 ChartDetailView(chart: chart)
+                    .id(chart.id)
             } else {
                 ContentUnavailableView(
                     "Select a Chart",

@@ -35,6 +35,11 @@ struct ChartListView: View {
                         Image(systemName: "icloud.slash")
                             .font(.caption)
                             .foregroundColor(.orange)
+                    } else if !ChartrixApp.isCloudKitEnabled {
+                        Image(systemName: "exclamationmark.icloud")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .help("CloudKit sync is not active")
                     } else if syncMonitor.isSyncing {
                         iCloudSyncIndicator
                     }

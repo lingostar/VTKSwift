@@ -62,6 +62,7 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 #include "vtkPolyData.h"
 #include "vtkPointData.h"
 #include "vtkCellArray.h"
+#include "vtkPoints.h"
 #include "vtkCell.h"
 #include "vtkTriangleFilter.h"
 
@@ -128,6 +129,17 @@ struct VTKBridgeData {
     bool                                             isVolumeMode = false;
     VTKVolumePreset                                  volumePreset = VTKVolumePresetSoftTissue;
     double                                           volumeOpacityScale = 1.0;
+
+    // Slice plane indicator (sync with DICOM viewer)
+    // Wireframe outline (thin yellow border) + corner brackets (thick yellow L-shapes)
+    vtkSmartPointer<vtkPlaneSource>                  slicePlaneSource;
+    vtkSmartPointer<vtkPolyDataMapper>               slicePlaneMapper;
+    vtkSmartPointer<vtkActor>                        slicePlaneActor;
+    vtkSmartPointer<vtkPolyData>                     slicePlaneCornerData;
+    vtkSmartPointer<vtkPolyDataMapper>               slicePlaneCornerMapper;
+    vtkSmartPointer<vtkActor>                        slicePlaneCornerActor;
+    bool                                             slicePlaneVisible = false;
+    double                                           slicePlaneFraction = 0.5;
 
     // Terrain rendering pipeline
     vtkSmartPointer<vtkImageData>                terrainImageData;
@@ -680,6 +692,12 @@ struct VTKBridgeData {
         _data->volumeOpacityTF = nullptr;
         _data->volumeGradientTF = nullptr;
         _data->volumeReader = nullptr;
+        _data->slicePlaneActor = nullptr;
+        _data->slicePlaneMapper = nullptr;
+        _data->slicePlaneSource = nullptr;
+        _data->slicePlaneCornerActor = nullptr;
+        _data->slicePlaneCornerMapper = nullptr;
+        _data->slicePlaneCornerData = nullptr;
 
         // Release terrain resources
         _data->terrainActor = nullptr;
@@ -1203,6 +1221,94 @@ struct VTKBridgeData {
     _data->renderer->SetBackground(0.0, 0.0, 0.0);
     _data->renderer->SetGradientBackground(false);
 #endif
+
+    // --- Slice Plane Indicator (synced with DICOM viewer) ---
+    // Option C: thin yellow wireframe outline + thick yellow corner brackets.
+    // No fill — keeps the volume fully visible while clearly marking the slice plane.
+    {
+        double bounds[6];
+        _data->volume->GetBounds(bounds);
+        double xMin = bounds[0], xMax = bounds[1];
+        double yMin = bounds[2], yMax = bounds[3];
+        double zMid = (bounds[4] + bounds[5]) * 0.5;
+
+        // 1) Thin wireframe rectangle (perimeter only, no fill)
+        _data->slicePlaneSource = vtkSmartPointer<vtkPlaneSource>::New();
+        _data->slicePlaneSource->SetXResolution(1);
+        _data->slicePlaneSource->SetYResolution(1);
+        _data->slicePlaneSource->SetOrigin(xMin, yMin, zMid);
+        _data->slicePlaneSource->SetPoint1(xMax, yMin, zMid);
+        _data->slicePlaneSource->SetPoint2(xMin, yMax, zMid);
+
+        _data->slicePlaneMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+        _data->slicePlaneMapper->SetInputConnection(_data->slicePlaneSource->GetOutputPort());
+
+        _data->slicePlaneActor = vtkSmartPointer<vtkActor>::New();
+        _data->slicePlaneActor->SetMapper(_data->slicePlaneMapper);
+        _data->slicePlaneActor->GetProperty()->SetRepresentationToWireframe();
+        _data->slicePlaneActor->GetProperty()->SetColor(0.95, 0.82, 0.10);   // bright yellow outline
+        _data->slicePlaneActor->GetProperty()->SetLineWidth(1.5);
+        _data->slicePlaneActor->GetProperty()->LightingOff();
+        _data->slicePlaneActor->SetVisibility(0);
+        _data->renderer->AddActor(_data->slicePlaneActor);
+
+        // 2) Corner brackets — 4 L-shapes, one per corner
+        // Each L = 2 line segments (horizontal arm + vertical arm) sharing a corner point.
+        // 16 total points (4 corners × 4 unique endpoints, with duplicates allowed).
+        const double width = xMax - xMin;
+        const double height = yMax - yMin;
+        const double bracketLen = std::min(width, height) * 0.12;
+
+        vtkSmartPointer<vtkPoints> bracketPoints = vtkSmartPointer<vtkPoints>::New();
+        bracketPoints->SetNumberOfPoints(16);
+        vtkSmartPointer<vtkCellArray> bracketLines = vtkSmartPointer<vtkCellArray>::New();
+
+        // Index layout per corner (4 indices each):
+        //   [0] = corner, [1] = horizontal arm tip
+        //   [2] = corner (duplicate), [3] = vertical arm tip
+        auto setCorner = [&](int base, double cx, double cy, double dx, double dy, double z) {
+            bracketPoints->SetPoint(base + 0, cx, cy, z);
+            bracketPoints->SetPoint(base + 1, cx + dx * bracketLen, cy, z);
+            bracketPoints->SetPoint(base + 2, cx, cy, z);
+            bracketPoints->SetPoint(base + 3, cx, cy + dy * bracketLen, z);
+        };
+        setCorner(0,  xMin, yMin, +1, +1, zMid);  // bottom-left
+        setCorner(4,  xMax, yMin, -1, +1, zMid);  // bottom-right
+        setCorner(8,  xMin, yMax, +1, -1, zMid);  // top-left
+        setCorner(12, xMax, yMax, -1, -1, zMid);  // top-right
+
+        // Add 8 line cells (2 per corner × 4 corners)
+        for (int corner = 0; corner < 4; ++corner) {
+            int base = corner * 4;
+            // Horizontal arm
+            bracketLines->InsertNextCell(2);
+            bracketLines->InsertCellPoint(base + 0);
+            bracketLines->InsertCellPoint(base + 1);
+            // Vertical arm
+            bracketLines->InsertNextCell(2);
+            bracketLines->InsertCellPoint(base + 2);
+            bracketLines->InsertCellPoint(base + 3);
+        }
+
+        _data->slicePlaneCornerData = vtkSmartPointer<vtkPolyData>::New();
+        _data->slicePlaneCornerData->SetPoints(bracketPoints);
+        _data->slicePlaneCornerData->SetLines(bracketLines);
+
+        _data->slicePlaneCornerMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+        _data->slicePlaneCornerMapper->SetInputData(_data->slicePlaneCornerData);
+
+        _data->slicePlaneCornerActor = vtkSmartPointer<vtkActor>::New();
+        _data->slicePlaneCornerActor->SetMapper(_data->slicePlaneCornerMapper);
+        _data->slicePlaneCornerActor->GetProperty()->SetColor(1.0, 0.92, 0.2);  // bright yellow
+        _data->slicePlaneCornerActor->GetProperty()->SetLineWidth(4.0);
+        _data->slicePlaneCornerActor->GetProperty()->LightingOff();
+        _data->slicePlaneCornerActor->SetVisibility(0);
+        _data->renderer->AddActor(_data->slicePlaneCornerActor);
+
+        _data->slicePlaneVisible = false;
+        _data->slicePlaneFraction = 0.5;
+    }
+
     _data->renderer->ResetCamera();
 
     // Switch to trackball for 3D interaction
@@ -1347,6 +1453,71 @@ struct VTKBridgeData {
 
 - (BOOL)isVolumeLoaded {
     return _data->isVolumeMode;
+}
+
+// --------------------------------------------------------------------------
+#pragma mark - Slice Plane (DICOM-Volume sync)
+// --------------------------------------------------------------------------
+
+- (void)setSlicePlaneVisible:(BOOL)visible {
+    if (_data->slicePlaneActor) {
+        _data->slicePlaneActor->SetVisibility(visible ? 1 : 0);
+    }
+    if (_data->slicePlaneCornerActor) {
+        _data->slicePlaneCornerActor->SetVisibility(visible ? 1 : 0);
+    }
+    _data->slicePlaneVisible = visible;
+    [self render];
+}
+
+- (void)setSlicePlaneZFraction:(double)fraction {
+    if (!_data->slicePlaneSource || !_data->volume) return;
+
+    double clamped = fraction;
+    if (clamped < 0.0) clamped = 0.0;
+    if (clamped > 1.0) clamped = 1.0;
+
+    double bounds[6];
+    _data->volume->GetBounds(bounds);
+    double xMin = bounds[0], xMax = bounds[1];
+    double yMin = bounds[2], yMax = bounds[3];
+    double z = bounds[4] + (bounds[5] - bounds[4]) * clamped;
+
+    // Update wireframe outline
+    _data->slicePlaneSource->SetOrigin(xMin, yMin, z);
+    _data->slicePlaneSource->SetPoint1(xMax, yMin, z);
+    _data->slicePlaneSource->SetPoint2(xMin, yMax, z);
+    _data->slicePlaneSource->Modified();
+
+    // Update corner brackets — re-position all 16 points at new Z
+    if (_data->slicePlaneCornerData) {
+        vtkPoints *pts = _data->slicePlaneCornerData->GetPoints();
+        if (pts) {
+            const double width = xMax - xMin;
+            const double height = yMax - yMin;
+            const double bracketLen = std::min(width, height) * 0.12;
+
+            auto setCorner = [&](int base, double cx, double cy, double dx, double dy) {
+                pts->SetPoint(base + 0, cx, cy, z);
+                pts->SetPoint(base + 1, cx + dx * bracketLen, cy, z);
+                pts->SetPoint(base + 2, cx, cy, z);
+                pts->SetPoint(base + 3, cx, cy + dy * bracketLen, z);
+            };
+            setCorner(0,  xMin, yMin, +1, +1);
+            setCorner(4,  xMax, yMin, -1, +1);
+            setCorner(8,  xMin, yMax, +1, -1);
+            setCorner(12, xMax, yMax, -1, -1);
+            pts->Modified();
+            _data->slicePlaneCornerData->Modified();
+        }
+    }
+
+    _data->slicePlaneFraction = clamped;
+    [self render];
+}
+
+- (BOOL)slicePlaneVisible {
+    return _data->slicePlaneVisible;
 }
 
 // --------------------------------------------------------------------------

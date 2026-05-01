@@ -95,6 +95,21 @@ typedef NS_ENUM(NSInteger, VTKVolumePreset) {
 @property (nonatomic, readonly) BOOL isVolumeLoaded;
 
 // --------------------------------------------------------------------------
+#pragma mark - Slice Plane (DICOM-Volume sync)
+// --------------------------------------------------------------------------
+
+/// Show or hide the slice plane indicator overlaid on the volume.
+/// The plane is created lazily after a volume is loaded.
+- (void)setSlicePlaneVisible:(BOOL)visible;
+
+/// Position the slice plane along the volume's Z axis.
+/// @param fraction Position fraction in [0.0, 1.0]; 0=bottom slice, 1=top slice.
+- (void)setSlicePlaneZFraction:(double)fraction;
+
+/// Whether the slice plane is currently visible.
+@property (nonatomic, readonly) BOOL slicePlaneVisible;
+
+// --------------------------------------------------------------------------
 #pragma mark - Molecular Visualization (macOS only)
 // --------------------------------------------------------------------------
 
